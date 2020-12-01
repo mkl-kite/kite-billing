@@ -1,0 +1,90 @@
+<?php
+
+$tables['switch']=array(
+	'title'=>'свич',
+	'table_name'=>'user_tech_data',
+	'table_module'=>"",
+	'class'=>'normal',
+	'style'=>'white-space:nowrap;text-align:center',
+	'table_triggers'=>array(
+	),
+	'sort'=>'',
+	'group'=>'',
+
+	// поля
+	'fields'=>array(
+		'unit'=>array(
+			'label'=>'юнит',
+			'type'=>'text',
+			'style'=>'width:50px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'port'=>array(
+			'label'=>'порт',
+			'type'=>'text',
+			'style'=>'width:50px',
+			'native'=>true,
+			'access'=>array('r'=>2,'w'=>5)
+		),
+		'vlan'=>array(
+			'label'=>'влан',
+			'type'=>'text',
+			'style'=>'width:50px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'onu'=>array(
+			'label'=>'мак ONU',
+			'type'=>'text',
+			'class'=>'csid',
+			'style'=>'width:160px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'signal'=>array(
+			'label'=>'затухание',
+			'type'=>'text',
+			'style'=>'width:60px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'mac'=>array(
+			'label'=>'мак адрес',
+			'type'=>'text',
+			'class'=>'csid',
+			'style'=>'width:160px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'uid'=>array(
+			'label'=>'user id',
+			'type'=>'text',
+			'style'=>'width:50px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'username'=>array(
+			'label'=>'пользователь',
+			'type'=>'text',
+			'style'=>'width:120px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'address'=>array(
+			'label'=>'адрес',
+			'type'=>'text',
+			'style'=>'width:200px;text-align:left',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'online'=>array(
+			'label'=>'ip адрес',
+			'type'=>'text',
+			'style'=>'width:80px',
+			'native'=>false,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+	)
+);
+?>

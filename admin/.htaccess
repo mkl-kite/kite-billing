@@ -1,0 +1,5 @@
+php_value include_path ".:./include:./menu:./ajax:./lists:./classes:./db:./docs:/usr/local/share/jpgraph"
+php_value request_order "GP"
+php_value default_charset "UTF-8"
+ErrorDocument 404 /missing.php
+AddDefaultCharset UTF-8

@@ -1,0 +1,4 @@
+php_value include_path ".:./modules:../admin/include:../admin/classes:../admin/db:../admin/docs"
+php_value default_charset "UTF-8"
+ErrorDocument 404 /missing.php
+DirectoryIndex index.php

@@ -1,0 +1,296 @@
+#all {
+	position:relative;
+}
+#map { 
+	overflow: none;
+	float:left;
+}
+#targets {
+	float:right;
+	border: 1px solid #aaa;
+	padding: 5px;
+	background-color: rgba(255,255,255,0.6);
+	box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.1) inset;
+	overflow-y: auto;
+}
+/* ============== tree ================= */
+.tree ul {
+	list-style:none;
+	padding-left: 15px;
+}
+.tree > li > ul {
+	padding-left: 0px !important;
+	margin: 3px 0;
+}
+.tree li {
+	list-style:none;
+}
+.tree li > .lihead {
+	position:relative;
+	border-bottom:solid 1px rgba(0,0,0,0);
+	font:normal 10pt sans-serif;
+	white-space:nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: pointer;
+	padding: 2px 0 2px 15px;
+}
+.tree .lihead > .hud {
+	position:absolute;
+	background-color:#F1F1FF;
+	top:2px;
+	right:0px;
+	display:none;
+	height: 100%;
+	border-bottom:solid 1px rgba(0,0,0,0);
+}
+.tree li > .lihead:hover {
+	border-bottom:dashed 1px #000 !important;
+}
+.tree li > .lihead:hover > .hud {
+	display:block !important;
+}
+.tree li > .lihead > img {
+	vertical-align:middle;
+	margin:0 5px;
+}
+.tree li.selected > .lihead {
+/*	border-bottom:solid 1px rgba(0,0,0,0.05); */
+/*	background-color: rgba(0,0,0,0.05); */
+	text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+	font-weight: bold;
+}
+.tree li.selected > .lihead > em {
+	font-weight: normal;
+}
+.tree li.selected > .lihead > .hud {
+	border-bottom:solid 1px rgba(0,0,0,0);
+	background-color: #F1F1FF;
+}
+.tree .lihead > em {
+	color:#84f;
+}
+.tree li.Street.selected > .lihead {
+	background: none !important;
+	border-bottom:solid 1px rgba(0,0,0,0);
+}
+.tree li.Rayon > .lihead {
+	text-shadow: 1px 1px 2px rgba(255,255,255,0.6);
+	font-weight: bold;
+	color: #52c;
+}
+
+/* ============== customized .tree =================== */
+#objects > li > ul > li > .lihead {
+	font: normal bold 10pt sans-serif;
+	text-shadow: 1px 1px 2px rgba(224,64,255,0.4);
+}
+.tree .treeNode > ul {
+	padding-left: 15px;
+}
+.tree .treeNode > .lihead {
+	padding-left: 5px;
+}
+.tree li.Street {
+	padding-left: 5px;
+}
+.tree li.Street > .lihead {
+	padding-left: 3px;
+}
+.tree li.Street > ul > li > .lihead {
+	padding-left: 20px;
+}
+.tree li.Device > .lihead {
+	padding-left: 25px;
+}
+.tree li.Port > .lihead {
+	padding-left: 5px;
+}
+.tree li.Port > ul {
+	width:800px;
+}
+.tree li.TracePort {
+	position: relative;
+}
+.tree li.TracePort > ul {
+	padding-left: 23px;
+}
+.tree li.TracePort .lihead {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.tree li.User > .lihead {
+    font: normal bold 10pt sans-serif;
+}
+.tree li.User > .lihead > .lidata {
+	display:inline-block !important;
+	position:absolute;
+	right:0px;
+}
+.tree li.Street > ul > li > .lihead > .lidata {
+    min-width: 30px;
+    display: inline-block;
+}
+.tree > li.treeNode > ul > li.treeNode > ul > li > .lihead em {
+    margin-left: 15px;
+}
+.tree svg {
+	position: absolute;
+	shape-rendering: crispEdges;
+	stroke: black;
+	stroke-width: 1;
+	fill: none;
+	width:26px;
+	height:100%;
+	top:0;
+	left:0px;
+}
+.tree svg .dot {
+	stroke-dasharray:2 1;
+}
+li.TracePort svg { left:-10px; }
+.tree li.selected > svg #y { display: none; }
+/* end customized .tree */
+.hud .button {
+	cursor:pointer;
+	vertical-align:bottom;
+	display:inline-block !important;
+	margin-left: 3px;
+	border:solid 1px rgba(0,0,0,0);
+}
+.hud .button:hover, .leaflet-popup .button:hover {
+	background-color: rgba(0,0,0,0.05);
+	border-left:solid 1px rgba(255,255,255,0.9);
+	border-top:solid 1px rgba(255,255,255,0.9);
+	border-right:solid 1px rgba(0,0,0,0.3);
+	border-bottom:solid 1px rgba(0,0,0,0.3);
+}
+.hud .button:active, .leaflet-popup .button:active {
+	background-color: rgba(255,255,255,0.05);
+	border-left:solid 1px rgba(0,0,0,0.3);
+	border-top:solid 1px rgba(0,0,0,0.3);
+	border-right:solid 1px rgba(255,255,255,0.9);
+	border-bottom:solid 1px rgba(255,255,255,0.9);
+}
+
+
+
+.leaflet-popup { min-width:150px; }
+.leaflet-popup .button { border:1px solid rgba(0,0,0,0); vertical-align: middle; }
+.leaflet-popup-content .linkform {
+	font: normal bold 9pt sans !important;
+	text-decoration:none !important;
+}
+.leaflet-popup-content .online {
+	font: normal 9pt sans !important;
+}
+.leaflet-draw-toolbar a {
+	background-image: url("pic/spritesheet.png") !important;
+}
+.leaflet-draw-toolbar .leaflet-draw-draw-reserv {
+	background-position: -62px -2px !important;
+}
+#targets .online {color:#080;}
+#targets .offline {color:#000;}
+.gone {color:#888;}
+.hinfo {
+	font: bold 10pt sans;
+	margin:0;
+}
+.port {
+	font: normal 8pt/1.7 sans-serif;
+	border:solid 1px #555;
+	width:17px;
+	height:17px;
+	text-align:center;
+	display:inline-block;
+	text-indent: 0;
+}
+span.color {
+	font: normal 7pt sans-serif;
+	border:solid 1px #555;
+	width:20px;
+	float:right;
+	position:relative;
+	top:-11pt;
+}
+.ui-widget-content {
+	z-index: 2000;
+}
+.ui-menu-item {
+	font-size: 10.5pt !important;
+}
+label.list-item {
+	border-radius: 3px;
+	padding: 0 5px 0 5px;
+}
+label.list-item:hover {
+	background-color: rgba(0,0,16,0.1);
+	cursor: pointer;
+}
+.leaflet-control-layers-expanded .leaflet-control-layers-rayon{
+	display: none;
+}
+.leaflet-control-layers-expanded  .leaflet-control-layers-menu{
+	display: none;
+}
+.leaflet-control-layers-rayon {
+	background-image: url("pic/glaz.png");
+	background-position: center;
+	background-repeat: no-repeat;
+	height: 36px;
+	width: 36px;
+	display: block;
+}
+.leaflet-control-layers-menu {
+	background-image: url("pic/menu.png");
+	background-position: center;
+	background-repeat: no-repeat;
+	height: 36px;
+	width: 36px;
+	display: block;
+}
+span.devtype {
+	text-shadow: #fff 1px 1px 1px;
+	color: #888;
+	width: 50px;
+	margin-right: 10px;
+}
+.ui-resizable-handle {
+	background-color: #d0d0f0;
+/*	box-sizing:border-box; */
+	border-left:1px solid #fff;
+	border-right:1px solid #777;
+	cursor:ew-resize !important;
+	z-index:1000;
+}
+.ui-resizable-helper {
+	border-right: 3px solid #b0b0e0;
+}
+.div-icon {
+	font:nomal 8pt sans-serif;
+	text-align:center;
+	border:1px solid #888;
+}
+.fade-div-icon1 {
+	background-color: #8f8;
+}
+.fade-div-icon2 {
+	background-color: #d7ff00;
+}
+.fade-div-icon3 {
+	background-color: #ffff00;
+}
+.fade-div-icon4 {
+	background-color: #ffd800;
+}
+.fade-div-icon5 {
+	background-color: #ffa800;
+}
+.fade-div-icon6 {
+	background-color: #ff4646;
+}
+.leaflet-buttons-control-img {
+	cursor: pointer;
+}

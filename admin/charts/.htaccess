@@ -1,0 +1,2 @@
+allow from all
+php_value include_path ".:./../include:./../menu:./../ajax:./../lists:./../classes:./../db:/usr/local/share/jpgraph"

@@ -1,0 +1,75 @@
+.switch {
+	background-color: #777;
+	border-top: 2px solid #ddd;
+	border-left: 2px solid #ddd;
+	border-right: 2px solid #000;
+	border-bottom: 2px solid #000;
+	height: 90px;
+	width: 800px;
+}
+.switch .port {
+	color: #fff;
+	float: left;
+	background-color: #000;
+	font: bold 9pt sans-serif;
+	text-align: center;
+	line-height: 18pt;
+	margin-left: 10px;
+	margin-top: 10px;
+	border-top: 1px solid #777;
+	border-left: 1px solid #777;
+	border-right: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+	height: 23px;
+	width: 23px;
+	cursor:pointer;
+	box-shadow: inset rgba(200,100,255,0.7) 0 0 8px;
+}
+.switch .blink {
+	background-color: #0d0 !important;
+}
+.switch .port:hover {
+	background-color: #336;
+}
+.switch .portup {
+	color: #000;
+	background-color: #0f0;
+	box-shadow: inset rgba(0,0,0,0.7) 0 0 5px;
+}
+.switch .portup:hover {
+	background-color: #0d0;
+}
+.switch .switchlabel {
+	float: left;
+	color: #fff;
+	padding-top:10px;
+	font: bold 14pt sans-serif;
+	height: 90px;
+	width: 200px;
+	position:relative;
+}
+.switch .switchlabel .switchip {
+	background-color: #ddd;
+	top: 60px;
+	color: black;
+	font: 9pt/1.4 sans-serif;
+	left: 1px;
+	position: absolute;
+	width: 100px;
+}
+.switch .switchports {
+	float: left;
+	text-align: left;
+	margin-top: 5px;
+	height: 90px;
+	width: 600px;
+}
+.switch .portgroup {
+	float: left;
+	margin-left: 10px;
+	height: 90px;
+	width: 150px;
+}
+.switch .portgroup:last-child {
+	width: 80px;
+}
