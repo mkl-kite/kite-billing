@@ -19,6 +19,15 @@ function Compare(_old,_new) {
 	return cmp
 }
 
+function getFadeStyle(value){
+	if(!tfade) return 0;
+	var n;
+	for(n=0; n < tfade.length; n++) {
+		if(value > tfade[n]) break;
+	}
+	return n;
+}
+
 (function ($) {
 $.each(['show', 'hide'], function (i, ev) {
 	var el = $.fn[ev];
@@ -359,9 +368,7 @@ $(document).ready(function() {
 		if(state==2) { s.fillColor = '#b33'; s.color = '#862' }
 		if(state>3) {
 			c = state * (-1);
-			for(n=0; n < tfade.length; n++) {
-				if(c > tfade[n]) break;
-			}
+			n = getFadeStyle(c);
 			if(fadingColor[n+1]) { s.fillColor = colors[n]; s.color = '#282' }
 		}
 		return s

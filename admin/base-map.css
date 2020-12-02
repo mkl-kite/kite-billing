@@ -120,6 +120,13 @@
 	white-space: nowrap;
 	text-overflow: ellipsis;
 }
+.tree li.TracePort .lihead .fading {
+	color: #d00;
+}
+.tree li.TracePort .lihead .fading:hover {
+	background-color: #fdd;
+	border-radius: 4px;
+}
 .tree li.User > .lihead {
     font: normal bold 10pt sans-serif;
 }

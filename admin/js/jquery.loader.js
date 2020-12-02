@@ -2502,6 +2502,12 @@ M.TreeNode = M.Class.extend({
 		else for(i in this._elements) if(this._elements[i].haveUndeployed()) return true;
 		return false;
 	},
+	each: function(func){
+		if(typeof func != 'function') return false;
+		var i;
+		func(this);
+		for(i in this._elements) this._elements[i].each(func);
+	},
 	expendAll: function(e){
 		var i;
 		this.show(e);
@@ -3075,9 +3081,13 @@ M.TracePort = M.TreeNode.extend({
 		showFld: {id:'id',fading:'затухание',link:'соединение',node:'узел'}
 	},
 	makeTitle(d){
-		var fade = d.fading? $('<span class="fading">').html((d.fading*1).toFixed(2)+"&ensp;") : "";
+		var fade = "";
+		if(d.fading){ 
+			d.fading = d.fading*1;
+			fade = $('<span class="fading">').html(d.fading.toFixed(2));
+		}
 		return [
-		$('<span>').append($('<div>').attr({class:'port',port:d.type,style:'border-style:'+((d.coloropt)?d.coloropt:'solid')+((d.color)?';background-color:'+d.color:'')}).text(d.number)),((d.device||d.address)?' &larr; ':'&emsp;'),fade,$('<span>').html((d.divide && d.divide<100)? "&nbsp;"+(d.divide*1)+" %":d.device),' &nbsp; ',$('<span>').text(d.address),((d.note)?'<img src="pic/tree/warn16.png" title="'+d.note+'">':''),
+		$('<span>').append($('<div>').attr({class:'port',port:d.type,style:'border-style:'+((d.coloropt)?d.coloropt:'solid')+((d.color)?';background-color:'+d.color:'')}).text(d.number)),((d.device||d.address)?' &larr; ':'&emsp;'),fade,(fade?"&ensp;":""),$('<span>').html((d.divide && d.divide<100)? "&nbsp;"+(d.divide*1)+" %":d.device),' &nbsp; ',$('<span>').text(d.address),((d.note)?'<img src="pic/tree/warn16.png" title="'+d.note+'">':''),
 		$(this.hud).append(this.makeHud())
 		];
 	},
@@ -3122,6 +3132,26 @@ M.TracePort = M.TreeNode.extend({
 				el.openAll();
 				return false;
 			}
+		});
+		$(this._header).find('.fading').on('click',function(e){
+			e.preventDefault(); e.stopPropagation();
+			$.popupForm({
+				data: {form:{name:'fade',focus:'fade',force_submit:1,style:'width:250px',header:'Изменить затухание',
+					fields:{fade:{label:'значение',type:'text',value:el.options.data.fading,style:'width:70px'}},
+					footer:{cancelbutton:{txt:'Отмена'},submitbutton:{txt:'Применить'}}}},
+				submit: function(q){
+					var fd = $.parseQuery(q), delta = fd.fade - el.options.data.fading;
+					el.each(function(l){
+						l.options.data.fading += delta;
+						$(l._header).find('.fading').html(((l.options.data.fading*1).toFixed(2))+"&ensp;");
+						if(l.options.layer && l.options.layer.feature.properties.type == 'divicon'){
+							var p = l.options.layer.feature.properties, f = l.options.data.fading;
+							l.options.layer.setIcon(diviconstyle(f.toFixed(1),getFadeStyle(f)+1).icon);
+						}
+					})
+				},
+				loader:ldr
+			})
 		});
 		$(this._header).on('click',function(e){
 			var d = el.options.data, n = d.node, p = d.id, dev = d.dev_id, o, t = d.type;

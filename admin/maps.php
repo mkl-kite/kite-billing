@@ -5,7 +5,7 @@ $CSSfile = array(
 	"js/leaflet.css",
 	"js/leaflet.draw.css",
 	"base-admin.css",
-	"base-map.css",
+	"base-map.css?ver=2020120301",
 );
 $myscript=array(
 	"js/leaflet-src.js",
