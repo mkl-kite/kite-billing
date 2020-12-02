@@ -3072,11 +3072,12 @@ M.Port = M.TreeNode.extend({
 M.TracePort = M.TreeNode.extend({
 	statics: {
 		className: 'TracePort',
-		showFld: {id:'id',link:'соединение',node:'узел'}
+		showFld: {id:'id',fading:'затухание',link:'соединение',node:'узел'}
 	},
 	makeTitle(d){
+		var fade = d.fading? $('<span class="fading">').html((d.fading*1).toFixed(2)+"&ensp;") : "";
 		return [
-		$('<span>').append($('<div>').attr({class:'port',port:d.type,style:'border-style:'+((d.coloropt)?d.coloropt:'solid')+((d.color)?';background-color:'+d.color:'')}).text(d.number)),((d.device||d.address)?' &larr; ':''), $('<span>').html(d.divide? "&emsp;"+Math.round(d.divide*10)/10+" %":d.device),' &nbsp; ',$('<span>').text(d.address),((d.note)?'<img src="pic/tree/warn16.png" title="'+d.note+'">':''),
+		$('<span>').append($('<div>').attr({class:'port',port:d.type,style:'border-style:'+((d.coloropt)?d.coloropt:'solid')+((d.color)?';background-color:'+d.color:'')}).text(d.number)),((d.device||d.address)?' &larr; ':'&emsp;'),fade,$('<span>').html((d.divide && d.divide<100)? "&nbsp;"+(d.divide*1)+" %":d.device),' &nbsp; ',$('<span>').text(d.address),((d.note)?'<img src="pic/tree/warn16.png" title="'+d.note+'">':''),
 		$(this.hud).append(this.makeHud())
 		];
 	},

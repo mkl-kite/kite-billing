@@ -137,6 +137,7 @@ $tables['homes']=array(
 			'tname'=>'entrances',
 			'sub'=>'get_subform_home_entrances',
 			'native'=>true,
+			'access'=>array('r'=>3,'w'=>3)
 		),
 		'active'=>array(
 			'label'=>'активные',

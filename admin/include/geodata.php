@@ -448,7 +448,6 @@ class Trace { // объект, формирующий трассу на осто
 				if($v['color']!='') $dev['color']=@$this->pcolor[$v['color']];
 				$dev['address']=$this->nodes[$v['node']]['address'];
 				$dev['device']=get_devname($d);
-				if(isset($dev['fading'])) $dev['device'] = sprintf("%.2f",$dev['fading'])." ".$dev['device'];
 				for($np=2;$np<$v['numports']+1;$np++){ // проход по всем портам разветвителя
 					if(!isset($d['childs'][$np])){
 						$sp = $d['off'][$np];
@@ -460,9 +459,9 @@ class Trace { // объект, формирующий трассу на осто
 						$sp = ($this->chain[$nextchain][0]['device'] == $v['device'])? $this->chain[$nextchain][0] : end($this->chain[$nextchain]);
 						if($DEBUG>0) log_txt(__METHOD__.": device: {$d['id']}  port: {$v['id']}   {$d['type']}:$np   next chain: $nextchain");
 						if($sp['color']!='') $sp['color'] = @$this->pcolor[$sp['color']];
-						$sp['device']="";
-						if(isset($sp['fading'])) $sp['device'] = sprintf("%.2f",$sp['fading'])." ".$sp['device'];
+						$sp['device']=""; $sp['fading']=0;
 						$sp['sequence'] = $this->treePorts($nextchain,$fading,$sheme,$freq);
+						$sp['fading'] = ($this->chain[$nextchain][0]['device'] == $v['device'])? $this->chain[$nextchain][0]['fading'] : arrfld(end($this->chain[$nextchain]),'fading');
 					}
 					$dev['sequence'][] = $sp;
 				}
@@ -481,7 +480,6 @@ class Trace { // объект, формирующий трассу на осто
 				if(isset($this->pon[$v['type']])) $name = "(".$this->devices[$v['device']]['subtype'].")";
 				
 				$dev['device']=$devtype[$v['type']]." ".$name;
-				if(isset($v['fading'])) $dev['device'] = sprintf("%.2f",$v['fading'])." ".$dev['device'];
 				$dev['address']=$this->nodes[$v['node']]['address'];
 				if($v['type']=='cable' && isset($ch[$k+1])) $dev['address'].=' '.$this->nodes[$ch[$k+1]['node']]['address'];
 				unset($dev['dir']);
