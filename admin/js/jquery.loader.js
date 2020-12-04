@@ -3143,7 +3143,7 @@ M.TracePort = M.TreeNode.extend({
 					var fd = $.parseQuery(q), delta = fd.fade - el.options.data.fading;
 					el.each(function(l){
 						l.options.data.fading += delta;
-						$(l._header).find('.fading').html(((l.options.data.fading*1).toFixed(2))+"&ensp;");
+						$(l._header).find('.fading').html((l.options.data.fading*1).toFixed(2));
 						if(l.options.layer && l.options.layer.feature.properties.type == 'divicon'){
 							var p = l.options.layer.feature.properties, f = l.options.data.fading;
 							l.options.layer.setIcon(diviconstyle(f.toFixed(1),getFadeStyle(f)+1).icon);

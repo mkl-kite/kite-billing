@@ -1486,6 +1486,8 @@ L.CRS.EPSG3857 = L.extend({}, L.CRS, {
 	}
 });
 
+L.CRS.default = L.CRS.EPSG3857;
+
 L.CRS.EPSG900913 = L.extend({}, L.CRS.EPSG3857, {
 	code: 'EPSG:900913'
 });
@@ -2453,11 +2455,11 @@ L.TileLayer = L.Class.extend({
 	onAdd: function (map) {
 		this._map = map;
 		this._animated = map._zoomAnimated;
-		var xy = map.getCenter(), z = map.getZoom();
+		var xy = map.getCenter(), z = map.getZoom(), crs;
 
-		if(this.options.crs != '' && L.CRS[this.options.crs]) {
-			map._oldCRS = map.options.crs;
-			map.options.crs = L.CRS[this.options.crs];
+		crs = (this.options.crs != ''  && L.CRS[this.options.crs])? L.CRS[this.options.crs] : L.CRS.default;
+		if(map.options.crs != crs) {
+			map.options.crs = crs;
 		}
 
 		// create a container div for tiles
@@ -2494,11 +2496,6 @@ L.TileLayer = L.Class.extend({
 	onRemove: function (map) {
 		var xy = map.getCenter(), z = map.getZoom();
 		this._container.parentNode.removeChild(this._container);
-
-		if(this.options.crs != '' && L.CRS[this.options.crs] && map._oldCRS) {
-			map.options.crs = map._oldCRS;
-			delete(map._oldCRS);
-		}
 
 		map.off({
 			'viewreset': this._reset,

@@ -25,13 +25,11 @@ define("FIRMLICENSE","Лицензия ".FIRMLIC."<BR>Свидетельство
 define("FIRMADDRESS","Весёлый район, улица Нечистой силы, дом 13");
 
 // адрес для файлов автономной карты
-// define("AUTONOMOUS_MAP_NAME","local");
-// define("AUTONOMOUS_MAP_URL","https://domain.net/files/map/{z}/{x}/{y}.png");
 define("AUTONOMOUS_MAP_NAME","");
 define("AUTONOMOUS_MAP_URL","");
 
 // адрес для запросов к nagios для карт
-define("NAGIOS_URL","https://domain.net/nagios/no3state.php");
+define("NAGIOS_URL","");
 define("CONFIGURE_NAGIOS","0"); // использовать автоматическое изменение конфигов в NAGIOS
 
 // адрес для запросов к icinga 
