@@ -74,6 +74,7 @@ INSERT INTO `settings` VALUES (32,31,'onu','2');
 INSERT INTO `settings` VALUES (33,31,'mconverter','2');
 INSERT INTO `settings` VALUES (34,31,'wifi','2');
 INSERT INTO `settings` VALUES (35,31,'server','1');
+UNLOCK TABLES;
 /*!40000 ALTER TABLE `settings` ENABLE KEYS */;
 
 --
