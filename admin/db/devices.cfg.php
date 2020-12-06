@@ -823,7 +823,7 @@ function cut_cable($id,$Point,$node=array()){ // разрезает кабель
 
 	// берем цвет жилы, метки и цвет связки у первого кабеля для второго
 	$ports = $q->select("SELECT p1.* FROM devports p1, devports p2 WHERE p1.device=p2.device AND p1.number=p2.number AND p1.id<p2.id AND p1.device={$cable['id']}",2,'id');
-	for($ports as $k=$p) $q->query("UPDATE devports SET color='{$p['color']}', coloropt='{$p['coloropt']}', bandle='{$p['bandle']}'  WHERE device='{$cable2['id']}' AND number='{$p['number']}'");
+	foreach($ports as $k=>$p) $q->query("UPDATE devports SET color='{$p['color']}', coloropt='{$p['coloropt']}', bandle='{$p['bandle']}'  WHERE device='{$cable2['id']}' AND number='{$p['number']}'");
 
 	// соединяем порты в точке разреза
 	$q->query("UPDATE devports p1, devports p2 SET p1.link=p2.id, p2.link=p1.id WHERE p1.number=p2.number AND p1.device={$cable['id']} AND p2.device={$cable2['id']} AND p1.node=p2.node AND p1.node={$node['id']}");
