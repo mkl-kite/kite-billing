@@ -803,7 +803,7 @@ function cut_cable($id,$Point,$node=array()){ // разрезает кабель
 	$node = array_merge(array('type'=>'node','gtype'=>'Point','name'=>'node_cut'.$cable['id'],'note'=>"разрез кабеля ".@$node1['address']." - ".@$node2['address']),$node);
 	$node['id'] = $q->insert('map',$node); // создаём узел в точке разреза
 	$node_xy = $q->insert('map_xy',array('object'=>$node['id'],'x'=>$Point['x'],'y'=>$Point['y'])); // добавляем координаты узла
-	// делаем координаты 1 кусока от начала
+	// делаем координаты 1 кусока от начала для определения длины
 	for($i=0;$i<$seg;$i++) $c1_xy[$i] = $xy[$i];
 	$c1_xy[$i] = $Point;
 	$c1_xy = makePoints(0,$cable['object'],$c1_xy);
@@ -821,8 +821,9 @@ function cut_cable($id,$Point,$node=array()){ // разрезает кабель
 	// меняем узел на конечных портах кабеля 1
 	$q->update_record('devices',array('id'=>$cable['id'],'node2'=>$node['id']));
 
-	// берем порты с кабеля 1 как основу ???
+	// берем цвет жилы, метки и цвет связки у первого кабеля для второго
 	$ports = $q->select("SELECT p1.* FROM devports p1, devports p2 WHERE p1.device=p2.device AND p1.number=p2.number AND p1.id<p2.id AND p1.device={$cable['id']}",2,'id');
+	for($ports as $k=$p) $q->query("UPDATE devports SET color='{$p['color']}', coloropt='{$p['coloropt']}', bandle='{$p['bandle']}'  WHERE device='{$cable2['id']}' AND number='{$p['number']}'");
 
 	// соединяем порты в точке разреза
 	$q->query("UPDATE devports p1, devports p2 SET p1.link=p2.id, p2.link=p1.id WHERE p1.number=p2.number AND p1.device={$cable['id']} AND p2.device={$cable2['id']} AND p1.node=p2.node AND p1.node={$node['id']}");
@@ -832,7 +833,6 @@ function cut_cable($id,$Point,$node=array()){ // разрезает кабель
 	$q->query("UPDATE `map_xy` SET `object`={$cable2['object']}, `num`=`num`-$seg+1 WHERE `object`={$cable['object']} AND num >= $seg ");
 	$q->insert('map_xy',array('object'=>$cable2['object'],'slice'=>0,'num'=>0,'x'=>$Point['x'],'y'=>$Point['y']));
 	$q->insert('map_xy',array('object'=>$cable['object'],'slice'=>0,'num'=>$seg,'x'=>$Point['x'],'y'=>$Point['y']));
-	update_colorscheme($cable2['id'],$cable['colorscheme'],$cable['bandleports']);
 
 	return array('node'=>$node['id'],'cable1'=>$cable['object'],'cable2'=>$cable2['object']);
 }

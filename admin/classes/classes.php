@@ -428,15 +428,11 @@ class sql_query{
 
 	function create_update($table,$update,$keyfield=''){
 		if($keyfield == '') $keyfield = $this->table_key($table);
-		if(!is_array($update) || !($update[$keyfield]>0) || $table=='') {
+		if(!is_array($update) || !isset($update[$keyfield]) || !($update[$keyfield]>0) || $table=='') {
 			$this->set_error(__METHOD__.": ERROR {$table}[$keyfield]='{$update[$keyfield]}' \$update=".arrstr($update));
 			return false;
 		}
 		$set=array();
-		if(!isset($update[$keyfield])) {
-			$this->set_error(__METHOD__.": undefined keyfield {$table}[$keyfield]='{$update[$keyfield]}' \$update=".arrstr($update));
-			return false;
-		}
 		foreach($update as $k=>$v) {
 			if($k!=$keyfield) 
 				if (is_bool($v)){
