@@ -1,24 +1,5 @@
 <?php
-/*
-EXEMPLE
-	<?php
-	$telnet = new Network_Telnet("10.10.10.1"); // use any hostname or IP address instead of 10.10.10.1
-	$telnet->setPort(23); // If you want to connect to TCP ports other than Telnet default (23), (optional)
-	$telnet->setConnectionTimeout(60); // if you want to change the connection timeout (optional)
-	$telnet->setPrompt(">"); // this is the prompt string of the remote device. this will help telnet library to detect if output of previous command is finished and reached to the command prompt or not.
 
-	try {
-		$telnet->connect();
-		$telnet->write("command to execute on host"); // send the command to be executed on remote host
-		$response = $telnet->waitForPrompt(); // read output of the command from remote host
-		$telnet->disconnect();
-	} catch (Network_Telnet_Exception $e) {
-		// handle connection or IO error
-		$telnet->disconnect();
-		die("Error occurred: " . $e);
-	}
-	?>
-*/
 class Tn_Exception extends Exception {
 	protected $_timestamp;
 
@@ -942,34 +923,264 @@ function extelnet($ip='',$commands=array()){
 	$telnet->setPort(23);
 	$telnet->setConnectionTimeout(5);
 
-	$pr = ">"; $cm = ""; $response = ""; $out = "";
+	$pr = ">"; $cm = ""; $response = ""; $out = ""; $vars = array(); $func = ''; $param = array();
 	$str = array_shift($commands);
 	$c = preg_split('/=>/',$str,2);
 	$n = count($c);
-	$cm = ($n==2)? $c[1] : $c[0];
+	$cm = ($n>1)? $c[1] : $c[0];
 	if($DEBUG>0) printf("\nsetPrompt '{$c[0]}'\n");
-	if($n==2) $telnet->setPrompt($c[0]);
+	if($n>1) $telnet->setPrompt($c[0]);
 	try {
 		if($DEBUG>0) printf("\nconnect\n");
 		$telnet->connect();
 		$response = $telnet->waitForPrompt();
 		while($str = array_shift($commands)){
-			$c = preg_split('/=>/',$str,2);
+			$c = preg_split('/=>/',$str);
 			$n = count($c);
-			if($DEBUG>0 && $n==2) printf("\nsetPrompt '{$c[0]}'\n");
-			if($n==2) $telnet->setPrompt($c[0]);
+			if($DEBUG>0 && $n>1) printf("\nsetPrompt '{$c[0]}'\n");
+			if($n>1) $telnet->setPrompt($c[0]);
+			if(count($vars)>0) foreach($vars as $k=>$v) $cm = preg_replace("/$k/",$v,$cm);
 			$telnet->write($cm);
 			$response = $telnet->waitForPrompt();
-			if(preg_match('/^(show|config|create|enable|delete|y) /',$cm)) $out .= $response;
-			$cm = ($n==2)? $c[1] : $c[0];
+			if($func && function_exists($func)) $vars = $func($response,$param);
+			if(preg_match('/^(show|config|create|enable|(ont )?delete|y) /',$cm)) $out .= $response;
+			$cm = ($n>1)? $c[1] : $c[0];
+			$func = ($n>2 && function_exists($c[2]))? $c[2] : '';
+			$param = ($n>3)? array_slice($c,3) : null;
 		}
 		$telnet->write($cm);
 		$telnet->disconnect();
-		return $out;
+		return ($out? $out:true);
 	} catch (Network_Telnet_Exception $e) {
 		$telnet->disconnect();
 		$ERRORS[] = "Error occurred: ".$e;
 		return false;
 	}
+}
+
+function telnetCheckResult($r) {
+	global $errors;
+	if(!$r) return false;
+	$s = preg_split("/\r?\n/",$r);
+	if(count($s)>0){
+		foreach($s as $i=>$line)
+			if(preg_match('/error:?\s*(.*)/i',$line,$m)) $errors[] = $m[1];
+	}
+	if(isset($errors) && count($errors)>0) return false;
+	return true;
+}
+
+
+function clearOnu($mac) {
+	global $DEBUG, $q, $config, $errors, $opdata;
+	$result = false;
+	if(!is_object($q)) $q = new sql_query($config['db']);
+	if(!preg_match('/^[0-9A-F\-:]{17}$/i',$mac)) $errors[] = "Неправильный мак адрес ($mac) !";
+	if(!$errors) $dev = $q->get("devices",$mac,"macaddress");
+	if($q->rows()!=1 || $dev['type']!='onu') $errors[] = "ONU ($mac) не найдено!";
+	if(!$errors && !($port = $q->select("SELECT id FROM devports WHERE device='{$dev['id']}' AND porttype='fiber' AND link>0",4)))
+		$errors[] = "Не найден порт устройства клиента!";
+	if(!$errors && !($found = cutClients($port))) $errors[] = "На карте не найдено подключение!";
+	if(!$errors && !($sw = $q->get("devices",$found[0]['rootid']))) $errors[] = "Не найден свич в базе!";
+	if(!$errors && !class_exists('switch_snmp')) include_once "snmpclass.php";
+	if(!$errors){ $swname = get_devname($sw,0,0); $switch = new switch_snmp($switch); }
+	if(!$errors && !$switch->online) $errors[] = log_txt("свич '$swname' не доступен!");
+	if(!$errors && !$sw['firmname'] && $switch->model) $sw['firmname'] = $switch->model;
+	if(!$errors && !$sw['firmname'] && preg_match('/([-A-Za-z]+) ..*/',$sw['name'],$m)) $sw['firmname'] = $m[1];
+	if(!$errors && !$sw['firmname']) $errors[] = "Неизвестный тип свича!";
+	$sw['firmname'] = preg_replace('/[^A-Za-z]/','',$sw['firmname']);
+	$func = "clearOnu".$sw['firmname'];
+	if(!$errors && (!$sw['login'] || !$sw['password'])) $errors[] = "Для {$sw['firmname']} нет данных аутентификации!";
+	if(!$errors && !function_exists($func)) $errors[] = "Работа с {$sw['firmname']} не подденживается!";
+	if(!$errors && !($iface = $q->select("SELECT * FROM devports WHERE device='{$sw['id']}' AND number='{$found[0]['rootport']}'",1)))
+		$errors[] = "Не найден интерфейс для {$found[0]['rootport']} порта!";
+	if($DEBUG>0) log_txt(__FUNCTION__.": mac: $mac  switch: ".get_devname($sw)."  port: $port  interface: $iface  ".($errors? "errors: ".implode(', ',$errors):""));
+	$data = array("wstype"=>'notify','to'=>$opdata['login'],"message"=>"");
+	if(!$errors){
+		$iface['numports'] = $sw['numports'];
+		$result = $func($sw['ip'],$sw['login'],$sw['password'],$iface,$mac);
+	}
+	if(telnetCheckResult($result)){
+		$data['message'] = "ONU $mac на ".get_devname($sw,0,0)." была удалена!";
+		$user = $q->select("SELECT u.* FROM users u, map m, devices d WHERE u.user=m.name AND m.id=d.node1 AND d.id={$dev['id']}",1);
+		log_db($user['user'],$user['uid'],"Сброс onu",$data['message']);
+		use_ws_server($data);
+	}else{
+		$data['type'] = 'error';
+		$data['message'] = "При удалении onu $mac возникли следующие ошибки:<BR>".implode("<BR>",$errors);
+		use_ws_server($data);
+		return false;
+	}
+}
+
+function clearOnuBDCOM($ip,$login,$pass,$if,$mac){
+	global $DEBUG;
+	if(!$ip || !$login || !$pass || !$if || !$mac){
+		log_txt(__FUNCTION__.": ERROR param = ".arrstr(func_get_args()));
+		return false;
+	}
+	$mac = preg_replace(array('/[^0-9A-F]/i','/^(....)(....)(....)/'),array('','$1.$2.$3'),strtoupper($mac));
+	$iface = "EPON0/".(($if['numports']>10)? $if['number']:$if['number']-6);
+	$cmd = array(
+		"Username:=>$login\r",
+		"Password:=>$pass\r",
+		">=>enable\r",
+		"#=>config\r",
+		"interface $iface\r",
+		"no epon bind-onu mac $mac\r",
+		"exit\r",
+		"exit\r",
+		"exit\r",
+		">=>exit\r"
+	);
+	$r = extelnet($ip,$cmd);
+	return $r;
+}
+
+function getOnuPortCDATA($r,$vars=null) {
+	global $DEBUG;
+	$a = explode("\n",$r); $out = null; $m = array();
+	if(!isset($vars[0])) $vars=array('([0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}');
+	foreach($a as $k=>$line){
+		if($DEBUG>0) log_txt(__FUNCTION__.":\t$k) $line");
+		if(preg_match('/\s*([0-9]\/[0-9])\s+([0-9]+)\s+([0-9]+)\s+'.$vars[0].'/',$line,$m)){
+			$out = array('EPON_DEVICE'=>$m[1],'EPON_PORT'=>$m[2],'ONU_ID'=>$m[3]);
+		}
+	}
+	if(!$out) $out = array('EPON_DEVICE'=>'0/0','EPON_PORT'=>'0','ONU_ID'=>'0');
+	if($DEBUG>0) log_txt(__FUNCTION__.": return ".arrstr($out));
+	return $out;
+}
+
+function clearOnuCDATA($ip,$login,$pass,$if,$mac){
+	global $DEBUG;
+	if($DEBUG>0) log_txt(__FUNCTION__.": ERROR param = ".arrstr(func_get_args()));
+	if(!$ip || !$login || !$pass || !$if || !$mac){
+		return false;
+	}
+	$mac = preg_replace(array('/[^0-9A-F]/i','/^(..)(..)(..)(..)(..)(..)/'),array('','$1:$2:$3:$4:$5:$6'),strtoupper($mac));
+	$cmd = array(
+		"User name:=>$login\r",
+		"User password:=>$pass\r",
+		">=>enable\r",
+		"#=>config\r",
+		"#=>show ont info by-mac $mac\r=>getOnuPortCDATA=>$mac",
+		"interface epon EPON_DEVICE\r",
+		"ont delete EPON_PORT ONU_ID\r",
+		"exit\r",
+		"exit\r",
+		"exit\r",
+		">=>exit\r"
+	);
+	$r = extelnet($ip,$cmd);
+	return $r;
+}
+
+function clearPortOnu($port){
+	global $DEBUG, $q, $config, $errors, $opdata;
+	$result = false;
+	if(!is_object($q)) $q = new sql_query($config['db']);
+	if(!$port || !is_array($port)) $errors[] = "Неизвестный порт!";
+	if(!$errors) $sw = $q->get("devices",$port['device']);
+	if($q->rows()!=1 || $sw['type']!='switch') $errors[] = "Устройство не является свичем!";
+	if(!$errors && !class_exists('switch_snmp')) include_once "snmpclass.php";
+	if(!$errors){ $swname = get_devname($sw,0,0); $switch = new switch_snmp($switch); }
+	if(!$errors && !$switch->online) $errors[] = log_txt("свич '$swname' не доступен!");
+	if(!$errors && !$sw['firmname'] && $switch->model) $sw['firmname'] = $switch->model;
+	if(!$errors && !$sw['firmname'] && preg_match('/([-A-Za-z]+) ..*/',$sw['name'],$m)) $sw['firmname'] = $m[1];
+	if(!$errors && !$sw['firmname']) $errors[] = "Неизвестный тип свича!";
+	$sw['firmname'] = preg_replace('/[^A-Za-z]/','',$sw['firmname']);
+	$func = "clearPortOnu".$sw['firmname'];
+	if(!$errors && (!$sw['login'] || !$sw['password'])) $errors[] = "Для {$swname} нет данных аутентификации!";
+	if(!$errors && !function_exists($func)) $errors[] = "Данная операция для {$swname} не подденживается!";
+	if($DEBUG>0) log_txt(__FUNCTION__.": switch: $swname  port: {$port['number']} ".($errors? "errors: ".implode(', ',$errors):""));
+	$data = array("wstype"=>'notify','to'=>$opdata['login'],"message"=>"");
+
+	if(!$errors) $result = $func($sw['ip'],$sw['login'],$sw['password'],$port['number']);
+	if(telnetCheckResult($result)){
+		$data['message'] = "Все ONU на {$port['number']} порту ".get_devname($sw,0,0)." были удалены!";
+		log_db("",0,"Сброс onu",$data['message']);
+		use_ws_server($data);
+	}else{
+		$data['type'] = 'error';
+		$data['message'] = "При удалении onu возникли следующие ошибки:<BR>".implode("<BR>",$errors);
+		use_ws_server($data);
+		return false;
+	}
+}
+
+function clearPortOnuCDATA($ip,$login,$pass,$port){
+	global $DEBUG;
+	if(!$ip || !is_numeric($port) || $port < 1 || $port > 16) return false;
+	$cmd = array(
+		"User name:=>$login\r",
+		"User password:=>$pass\r",
+		">=>enable\r",
+		"#=>config\r",
+		"interface epon 0/0\r",
+		"ont delete $port all\r",
+		"(y/n):=>y \r",
+		"#=>exit\r",
+		"exit\r",
+		"exit\r",
+		">=>exit\r"
+	);
+	return extelnet($ip,$cmd);
+}
+
+function configVlanDLINK($ip,$data){
+	global $q, $errors;
+	$switch = $q->get("devices",$ip,"ip");
+	if(!$ip || !is_array($data)) return false;
+	$sw = new switch_snmp($switch);
+	if($sw->model != 'DLINK'){ log_txt("свич '$ip' не доступен!"); return false; }
+	$result = array();
+	$cmd[] = "UserName:=>".$switch['login'];
+	$cmd[] = "PassWord:=>".$switch['password'];
+	if(isset($data['command'])) $cmd[] = "#=>{$data['command']} vlan vlanid {$data['vlan']}";
+	if(isset($data['port'])) $cmd[] = "#=>config vlan vlanid {$data['vlan']} add ".(($data['tagged'])? "tagged":"untagged"). $data['port'];
+	$cmd[] = "logout";
+	if($r = extelnet($ip,$cmd)){
+		$str = "";
+		for($i=0, $len = strlen($r); $i<$len; $i++){
+			$ch = $r[$i]; $ord = ord($ch);
+			if($ord>31 && $ord<127 || $ord==10) $str .= $ch;
+		}
+		$result = preg_split("/[\n]+/",$str);
+		$result = array_splice($result,2,count($result)-3);
+		if(preg_match('/fail/i',end($result))){
+			$errors[] = implode(" ",array_splice($result,0,count($result)-1));
+			return false;
+		}
+	}
+	return $result;
+}
+
+function getTelnetFdbBDCOM($ip){
+	global $q;
+	$sw = $q->get("devices",$ip,"ip");
+	if(!$sw) return false;
+	$fdb = array();
+	$cmd = array(
+		"Username: =>".$sw['login'],
+		"Password: =>".$sw['password'],
+		">=>enable",
+		"#=>show mac address-table",
+		"exit",
+		">=>exit"
+	);
+	if($r = extelnet($ip,$cmd)){
+		$a = explode("\n",$r);
+		foreach($a as $k=>$line){
+			if(preg_match('/^([^ ]+)\s+([^ ]+)\s+([^ ]+)\s+([^ \r\n]+)/',$line,$m)){
+				if($m[1] != 'Vlan' && substr($m[1],0,2) != '--'){
+					if(substr($m[4],0,2)=='g0') $pn = substr_replace($m[4],'GigaEthernet',0,1);
+					if(substr($m[4],0,4)=='epon') $pn = substr_replace($m[4],'EPON',0,4);
+					$fdb[] = array("vlan"=>$m[1],"mac"=>normalize_mac($m[2]),"portname"=>$pn);
+				}
+			}
+		}
+	}
+	return $fdb;
 }
 ?>

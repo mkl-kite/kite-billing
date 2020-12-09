@@ -903,6 +903,7 @@ FORM.normal #field-money input { padding:3px 4px; }
 FORM.normal #field-activate { float:right; margin-right:10px; }
 FORM.normal[name=map] #field-type { float:left; }
 FORM.normal[name=map] #field-type + #field-subtype .label { min-width:55px; }
+FORM.normal[name=map] #field-rayon { clear:both; }
 FORM.normal[name=map] { max-width:380px; }
 FORM.normal[name=pay] .label { min-width:100px; }
 FORM.normal[name=pay] .header { margin-bottom:20px; }
@@ -1611,6 +1612,7 @@ FORM .submit-container {
 	bottom:0;
 	margin:20px 0 8px 0;
 	text-align:right;
+	position:relative;
 }
 FORM.error .submit-button {
 	border: 1px solid #731515;
@@ -1681,7 +1683,7 @@ FORM.normal .submit-button, FORM.normal INPUT[type=button], FORM.normal INPUT[ty
 	vertical-align: middle;
 	cursor:pointer;
 	margin-left: 10px;
-	min-height:25px;
+	min-height:20px;
 	outline: none;
 	-webkit-user-select: none;
 	-moz-user-select: none;

@@ -68,7 +68,7 @@ function normalize_ip($a) {
 }
 
 function normalize_mac($a) {
-	$a = strtolower(preg_replace('/[^A-Fa-f0-9]/','',$a));
+	$a = strtoupper(preg_replace('/[^A-Fa-f0-9]/','',$a));
 	$a = preg_replace('/(..)(..)(..)(..)(..)(..)/','$1:$2:$3:$4:$5:$6',$a);
 	if(strlen($a)==17){
 		return $a;

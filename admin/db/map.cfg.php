@@ -509,6 +509,8 @@ function before_save_object($c,$o) {
 	global $DEBUG, $config, $tables, $newclientcable, $modclientcable, $NAGIOS_ERROR;
 	$r=array_merge($o,$c);
 	if($DEBUG>0) log_txt(__FUNCTION__.": type='{$r['type']}' cmp = ".arrstr($c));
+	if(key_exists('macaddress',$c) && $c['macaddress'] && !($c['macaddress'] = normalize_mac($c['macaddress'])))
+		stop("Неверный mac адрес!");
 	if($r['type']=='client') {  // Обработка при сохранении объекта 'client'
 		$adt = $config['map']['clientdevtypes']; // тип клиентского устройства
 		$dt = $adt[$r['subtype']]; // тип клиентского устройства
@@ -598,7 +600,6 @@ function before_save_object($c,$o) {
 				$q->update_record('devices',array('id'=>$cable['id'],'node1'=>$c['connect'],'node2'=>$r['id']));
 				$modclientcable = $cable['object'];
 			}
-			if(isset($c['macaddress'])) $c['macaddress'] = strtoupper(preg_replace(array('/[^A-F0-9]/i','/^(..)(..)(..)(..)(..)(..).*/'),array('','$1:$2:$3:$4:$5:$6'),$c['macaddress']));
 			// когда изменяется узел подключения клиента, но на клиента нет кабеля
 			if(isset($c['connect']) && !$cable){
 				if($DEBUG>0) log_txt(__FUNCTION__.": добавляем кабель");

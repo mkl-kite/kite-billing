@@ -316,7 +316,7 @@ class Icinga2{
 		return $res;
 	}
 
-	function deleteHostServices($host=null){ // возвращает все сервысы по устройству
+	function deleteHostServices($host=null){ // удаляет все сервысы по устройству
 		if(!$host) return array();
 		if(is_numeric($host)){
 			$device = $this->q->select("SELECT d.*,m.address FROM devices d, map m WHERE d.node1=m.id AND d.id='$host'",1);

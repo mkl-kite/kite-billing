@@ -29,9 +29,9 @@ $tables['monitoring']=array(
 // 	'footer'=>array(),
 	'class'=>'normal',
 	'before_check'=>'before_check_monitoring',
-	'before_new'=>'before_new_monitoring',
+	'before_new'=>'before_monitoring',
 	'before_save'=>'before_save_monitoring',
-	'before_edit'=>'before_edit_monitoring',
+	'before_edit'=>'before_monitoring',
 	'form_save'=>'save_monitoring',
 	'form_onsave'=>'onsave_monitoring',
 	// поля
@@ -178,7 +178,7 @@ function before_check_monitoring($f,$my) {
 	return $f;
 }
 
-function before_new_monitoring($f,$my) {
+function before_monitoring($f,$my) {
 	global $q, $DEBUG, $config, $opdata;
 	if(!is_object($q)) $q = new sql_query($config['db']);
 	$id = (isset($_REQUEST['id']))? numeric($_REQUEST['id']) : "";
@@ -282,6 +282,20 @@ function before_new_monitoring($f,$my) {
 		}else{
 			stop("Ошибка данных!");
 		}
+		if($f['record']){
+			$f['footer'] = array(
+				"actionbutton"=>array("txt"=>'Отключить','style'=>"position:absolute;left:0;top:-5px",'onclick'=>"
+					var f = $(this).parents('form'), id = f.find('input[name=id]').val();
+					if(ldr) ldr.get({
+						data: 'go=devices&do=disableMon&id='+id,
+						onLoaded: function(d){}
+					})
+					f.find('#cancelbutton').click();
+				"),
+				"cancelbutton"=>array("txt"=>'Отменить'),
+				"submitbutton"=>array("txt"=>'Сохранить')
+			);
+		}
 	}elseif(NAGIOS_URL){
 		unset($f['fields']['operation']);
 		if(!($h = get_nagios("do=get_objects&objects=address:{$dev['ip']}",'hosts'))){
@@ -304,10 +318,6 @@ function before_new_monitoring($f,$my) {
 		$f['record'] = array('type'=>$dev['type'], 'host_name'=>$host['name'], 'display_name'=>$host['display_name'], 'ip'=>$host['attrs']['address'], 'community'=>$host['attrs']['vars']['snmp_community'], 'parents'=>$host['attrs']['vars']['parents'], 'operation'=>'');
 	}
 	return $f;
-}
-
-function before_edit_monitoring($f,$my) {
-	return before_new_monitoring($f,$my);
 }
 
 function before_save_monitoring($c,$o,$my) {

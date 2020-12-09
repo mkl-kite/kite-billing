@@ -775,15 +775,9 @@ $(document).ready(function() {
 	}
 */
 	osm = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-		crs: 'EPSG3857',
-		reuseTiles: true,
-		updateWhenIdle: false,
 		attribution: 'osm'
 	});
 	google = new L.tileLayer('https://www.google.cn/maps/vt?lyrs=s@189&gl=cn&x={x}&y={y}&z={z}',{
-		crs: 'EPSG3857',
-		reuseTiles: true,
-		updateWhenIdle: false,
 		attribution: 'google'
 	});
 	if(autonom_name && autonom_url) terra = new L.TileLayer(autonom_url,{

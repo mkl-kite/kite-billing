@@ -102,6 +102,12 @@ $tables['devices']=array(
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5,'g'=>'map')
 		),
+		'selectednode'=>array(
+			'label'=>'selectednode',
+			'type'=>'hidden',
+			'native'=>false,
+			'access'=>array('r'=>1,'w'=>5,'g'=>'map')
+		),
 		'type'=>array(
 			'label'=>'тип',
 			'type'=>'select',
@@ -263,6 +269,32 @@ $tables['devices']['fields']['type']['onchange'] = js_type_onchange($dev_fields_
 function before_edit_device($f) {
 	global $DEBUG, $config, $q, $devtype, $dev_fields_filter, $dev_fields_label;
 	if($DEBUG>0) log_txt(__function__.": start for {$f['name']}[{$f['id']}]");
+	if(!$f['id'] && isset($_REQUEST['id'])) $f['id'] = numeric($_REQUEST['id']);
+	if(!isset($_REQUEST['id']) && isset($_REQUEST['uid'])){
+		$uid = numeric($_REQUEST['uid']);
+		$client = $q->get('users',$uid);
+		if($client) $obj = $q->select("SELECT * from map WHERE type='client' AND name='{$client['user']}'",1);
+		if($obj) $dev = $q->select("SELECT * from devices WHERE node1='{$obj['id']}' AND type!='cable'",1);
+		if($dev && $dev['type']=='onu'){
+			$f['id'] = $dev['id'];
+			$_REQUEST['selectednode'] = $dev['node1'];
+		}
+	}
+	$dev = $q->get("devices",$f['id']);
+	if($dev && $dev['type']=='onu'){
+		$f['footer'] = array(
+			"actionbutton"=>array("txt"=>'Сбросить','onclick'=>"
+				var f = $(this).parents('form'), id = f.find('input[name=id]').val();
+				if(ldr) ldr.get({
+					data: 'go=devices&do=clearonu&id='+id,
+					onLoaded: function(d){}
+				})
+				f.find('#cancelbutton').click();
+			"),
+			"cancelbutton"=>array("txt"=>'Отменить'),
+			"submitbutton"=>array("txt"=>'Сохранить')
+		);
+	}
 	$f['fields']['type']['type']='hidden';
 	if(isset($f['id'])){
 		if(!$q) $q = new sql_query($config['db']);
@@ -438,12 +470,12 @@ function before_save_device($c,$o,$my) {
 		$c['numports'] = preg_replace('/1x/','',$r['subtype'])+1;
 	}
 
-	if(isset($c['macaddress']) && $r['type']=='onu' && $o['macaddress']!='') {
-		if(ICINGA_URL){
+	if(key_exists('macaddress',$c) && $r['type']=='onu' && $o['macaddress']!='') {
+		if(ICINGA_URL && $c['macaddress'] == ''){
 			$port = $q->select("SELECT id FROM devports WHERE device='{$r['id']}' AND porttype='fiber' and link is not NULL",4);
 			if($port){
 				$mon = new Icinga2();
-				$mon->deleteServices($port['id']);
+				$mon->deleteServices($port);
 			}
 		}elseif(CONFIGURE_NAGIOS>0){
 			$port = $q->select("SELECT id FROM devports WHERE device='{$r['id']}' AND porttype='fiber' and link is not NULL",4);
@@ -499,74 +531,21 @@ function onsave_device($id,$save,$my) {
 	$old = $my->row;
 
 	$device = $q->select("SELECT * FROM devices WHERE id='{$save['id']}'",1);
-	$ports = $q->fetch_all("SELECT * FROM devports WHERE device='{$save['id']}' ORDER BY number, porttype");
 
-	if(!isset($pass[$device['type']])) {
-		// проверка кол-ва портов каждого типа (если бы небыло в алгоритме ошибок, то впринципе не нужно)
-		$portslice=array();
-		$pold = array('number'=>'','porttype'=>'','node'=>'');
-		if($ports) foreach($ports as $k=>$v) { // ищем задвоенные порты (3 парам. совпадает)
-			if($v['number'] == $pold['number'] && $v['porttype'] == $pold['porttype'] && $v['node'] == $pold['node']){
-				if(isset($pold['id'])){
-					// проверяем старый линк на др. порт, и если связь обоюдная то рубим текущий, если нет - старый
-					if($pold['link']>0 && $q->select("SELECT link FROM devports WHERE id='{$pold['link']}'",4) == $pold['id']){
-						$delports[] = $v['id'];
-					}else{
-						$delports[] = $pold['id'];
-					}
-				}
-			}else{
-				@$portslice[$v['porttype'].'_'.$v['node']]++;
-			}
-			$pold = $v;
+	if(ICINGA_URL && $device['type']=='switch' && count($changes = array_intersect_key($save,$fldmon))>0){
+		if(isset($changes['node1'])) $device['address'] = $q->select("SELECT address FROM map WHERE id='{$changes['node1']}'",4);
+		$mon = new Icinga2();
+		if(!$mon->updateHost($device)){
+			if($mon->code == 404 && !$mon->createHost($device))
+				log_txt("Icinga2 ошибка добавления свича: ".$mon->error);
 		}
-		if(isset($delports)) { // удаляем задвоенные порты
-			log_txt(__FUNCTION__.": удаление задвоенных портов ".arrstr($delports));
-			$q->query("DELETE FROM devports WHERE id in (".implode(',',$delports).")");
-			unset($delports);
-		}
-		$numports = 0;
-		foreach($portslice as $k => $v) { // находим наименьшее кол-во портов по типу и узлу
-			if($numports == 0) $numports = $v;
-			elseif($v < $numports) $numports = $v;
-		}
-	}else
-		$numports = count($ports);
-	
-	if(isset($save['colorscheme'])){
-		$colorschemes = $q->fetch_all("SELECT name, max(port) as m FROM devprofiles GROUP BY name",'name');
-		if(key_exists($device['colorscheme'],$colorschemes)){
-			update_colorscheme($device['id'],$device['colorscheme'],$device['bandleports']);
-			if($DEBUG>0) log_txt(__FUNCTION__.": update_colorscheme ".arrstr($device['colorscheme']));
-		}
+		updateDbPorts($device);
 	}
-	if($device['numports']!=$numports && $device['type'] == 'splitter') {
-		$q->query("UPDATE devports SET divide=".(100/($device['numports']-1))." WHERE device={$device['id']} AND number != 1");
-		if($DEBUG>0) log_txt(__FUNCTION__.": update devports[divide]: ".arrstr(100/($device['numports']-1)));
-	}
-	if($device['type'] == 'divisor' && key_exists('subtype',$save)) {
-		$a = preg_split('/\//',$save['subtype']);
-		if(@count($a)!=2) $a = array(50,50);
-		$q->query("UPDATE devports SET divide=if(number=2,{$a[0]},if(number=3,{$a[1]},null)) WHERE device={$device['id']}");
-		if($DEBUG>0) log_txt(__FUNCTION__.": update devports[divide]: $a[0]/$a[1]");
-	}
-
-	if($device['type']=='switch' && count($changes = array_intersect_key($save,$fldmon))>0 && ICINGA_URL){
-		$changes = array_intersect_key($save,array('name'=>0,'ip'=>1,'community'=>2,'node1'=>3));
-		if(count($changes)>0){
-			if(isset($changes['node1'])) $device['address'] = $q->select("SELECT address FROM map WHERE id='{$changes['node1']}'",4);
-			$mon = new Icinga2();
-			if(!$mon->updateHost($device)){
-				if($mon->code == 404 && !$mon->createHost($device))
-					log_txt("Icinga2 ошибка добавления свича: ".$mon->error);
-			}
-			updateDbPorts($device);
-		}
-	}
+	// если есть подключение с этой onu
 	if($device['type']=='onu' && isset($save['macaddress']) && $save['macaddress']!='') {
 		$acct = $q->select("
 			SELECT * FROM radacct WHERE acctstoptime is NULL AND username=callingstationid AND 
-			connectinfo_start like '%0206".(preg_replace('/[^A-F0-9]/i','',$save['macaddress']))."%'
+			connectinfo_start like '%0206".(preg_replace('/[^A-F0-9]/i','',$save['macaddress']))."%' LIMIT 1
 		",1);
 		if($acct){
 			$r = array_merge($old,$save);
@@ -583,8 +562,9 @@ function onsave_device($id,$save,$my) {
 		if(ICINGA_URL){
 			$port = $q->select("SELECT id FROM devports WHERE device='{$device['id']}' AND porttype='fiber' and link is not NULL",4);
 			if($port){
+				log_txt(__FUNCTION__.": onu macaddress={$save['macaddress']} port=$port");
 				$mon = new Icinga2();
-				$mon->createServices($port['id']);
+				$mon->createServices($port);
 			}
 		}elseif(CONFIGURE_NAGIOS>0){
 			$port = $q->select("SELECT id FROM devports WHERE device='{$device['id']}' AND porttype='fiber' and link is not NULL",4);

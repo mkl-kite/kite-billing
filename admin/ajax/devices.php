@@ -421,6 +421,40 @@ switch($in['do']){
 		stop(auto_address());
 		break;
 
+	case 'clearonu4port':
+		include_once "telnet.php";
+		$port = $q->get("devports",$in['id']);
+		if(!$port) stop("Порт не найден!");
+		$res = clearPortOnu($port);
+		$out = array("result"=>"OK","desc"=>"clearOnuPort procedure ".($res?"success":"failed"));
+		stop($out);
+		break;
+
+	case 'clearonu':
+		include_once "telnet.php";
+		$dev = $q->get("devices",$in['id']);
+		if(!$dev) stop("Устройсто не найдено");
+		$res = clearOnu($dev['macaddress']);
+		$out = array("result"=>"OK","desc"=>"clearOnu procedure ".($res?"success":"failed"));
+		stop($out);
+		break;
+
+	case 'disableMon':
+		include_once "telnet.php";
+		$object = $q->get("map",$in['id']);
+		if(!$object) stop("Объект не найден");
+		if($object['type'] != 'client') stop("Объект не найден");
+		$devtype = $config['map']['clientdevtypes'][$object['subtype']];
+		if(!($dev = $q->select("SELECT * FROM devices WHERE node1='{$object['id']}' AND type='$devtype'",1)))
+			stop("Не найдено устройство!");
+		if(!($port = $q->select("SELECT * FROM devports WHERE device='{$dev['id']}' AND porttype='fiber' AND link is not null",1)))
+			stop("Не найден порт подключения!");
+		$mon = new Icinga2();
+		$res = $mon->deleteServices($port['id']);
+		$out = array("result"=>"OK","desc"=>"disableMon procedure ".($res?"success":"failed"));
+		stop($out);
+		break;
+
 	default:
 		stop(array(
 		'result'=>'ERROR',
