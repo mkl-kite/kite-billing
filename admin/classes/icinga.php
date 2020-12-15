@@ -130,7 +130,7 @@ class Icinga2{
 			log_txt(__METHOD__.": Ошибка данных!"); return false;
 		}
 		$url = "/objects/services?pretty=1";
-		$data = array('filter'=>"host.name==\"id{$port['device']}.domain.net\" && ".
+		$data = array('filter'=>"host.name==\"id{$port['device']}.{$this->domain}\" && ".
 			"service.vars.device_port==\"{$port['number']}\" && ".($snmpid? "":"!")."service.vars.snmp_portid");
 		return $this->send($url,$data,array('X-HTTP-Method-Override: GET'));
     }
@@ -206,12 +206,10 @@ class Icinga2{
 		if($service['object']=='port'){
 			$data['attrs']["display_name"] = sprintf("Порт %02d ",$service['rootport']);
 			if($service['portname']) $data['attrs']["display_name"] .= $service['portname'];
-			if($service['address']) $data['attrs']['vars.location'] = $service['address'];
 			$data['templates'][]='generic-port';
 		}
 		if($service['object']=='home' && $service['type']!='onu'){
 			$data['attrs']["display_name"] = sprintf("Порт %02d ",$service['rootport']).$service['address'];
-			$data['attrs']['vars.location'] = $service['address'];
 			$data['templates'][]='generic-building';
 		}
 		if($service['object']=='client' && $service['type']=='onu'){
@@ -226,10 +224,10 @@ class Icinga2{
 		}
 		if($service['object']=='client' && $service['type']=='mconverter'){
 			$data['attrs']["display_name"] = sprintf("Порт %02d клиент ",$service['rootport']).$service['address'];
-			$data['attrs']['vars.location'] = $service['address'];
 			$data['attrs']['vars.login'] = $service['user'];
 			$data['templates'][]='generic-ftthclient';
 		}
+		if(isset($service['address'])) $data['attrs']['vars.location'] = $service['address'];
 		if($service['rootport']) $data['attrs']["vars.device_port"] = "{$service['rootport']}";
 		return $data;
 	}
@@ -280,18 +278,13 @@ class Icinga2{
     function updateService($service=null){ // обновляет значения ip display_name device_product location snmp_community для хоста
 		global $objecttype;
 		if(!$service) return false;
-		if(!is_array($service)) return false;
-		$object = ($service['type']=='port')? $this->q->get('devports',$service['id']) : $this->q->get('map',$service['id']);
-		if($service['type']=='port') $dev = $this->q->get('devices',$object['device']);
-		$oname = ($service['type']=='port')? "Порт {$object['number']} на ".get_devname($dev,0,0) : $objecttype[$object['type']]." ".$object['address'];
-		$url = "/objects/services/{$service['host_name']}!{$service['type']}{$service['id']}?pretty=1";
-		foreach(array('id','host_name','type') as $n) unset($service[$n]);
-		$model = ($service['firmname'])? $service['firmname'] : preg_replace('/\s+.*/','',$service['name']);
-		$product = ($service['firmname'])? preg_replace('/'.$service['firmname'].'[- ]/','',$service['name']) : preg_replace('/.*\s+/','',$service['name']);
+		if(!is_array($service) || !isset($service['host_name']) || !isset($service['service_name'])) return false;
+		$url = "/objects/services/{$service['host_name']}!{$service['service_name']}?pretty=1";
+		foreach(array('host_name','service_name') as $n) unset($service[$n]);
 		$data = array("attrs"=>$service);
 		if(!($res = $this->send($url,$data))){
-			$this->notify("Ошибка обновления данных для <b>$oname</b>!","error");
-		}else $this->notify("Данные по объекту <b>$oname</b> Обновлены!");
+			$this->notify("Ошибка обновления данных для <b>{$service['display_name']}</b>!","error");
+		}else $this->notify("Данные по объекту <b>{$service['display_name']}</b> Обновлены!");
 		return $res;
 	}
 
@@ -368,18 +361,22 @@ class Icinga2{
     }
 
     function safeRemoveServices($list){ // удаляет набор сервисов
-		if(!$list) return false;
+		if(!$list || !is_array($list)) return false;
 		$errors = $del = 0;
 		foreach($list as $k=>$s) {
 			if(!($res = $this->removeService($s['name']))){
 				log_txt("Ошибка удаления сервиса {$s['attrs']['display_name']}: ".$this->error);
-				$list[$k]['deleted'] = 0;
-				$list[$k]['error'] = $this->error;
+				$nodelete[] = $s['attrs']['display_name'];
+				$errors++;
 			}else{
-				$list[$k]['deleted'] = 1;
+				$cl = $s['attrs']['display_name'];
+				$del++;
+				if($del == 1) $rd = get_devname(preg_replace('/^id([0-9]+).*/','$1',$s['name']),0,0);
 			}
 		}
-		return $list;
+		if($errors) $this->notify("Следующие объекты не были удалены:\n".implode(",\n",$nodelete),"error",false);
+		if($del) $this->notify("Удалено отслеживание ".(($del>1)?"<b>$del</b> объектов":"<b>$cl</b>")." на <b>$rd</b>");
+		return $del;
     }
 
 	private function deleteService($service=null){ // удаляет сервис с проверкой имени

@@ -29,11 +29,12 @@ $tables['monitoring']=array(
 // 	'footer'=>array(),
 	'class'=>'normal',
 	'before_check'=>'before_check_monitoring',
-	'before_new'=>'before_monitoring',
+	'before_new'=>'before_new_monitoring',
 	'before_save'=>'before_save_monitoring',
-	'before_edit'=>'before_monitoring',
+	'before_edit'=>'before_edit_monitoring',
 	'form_save'=>'save_monitoring',
 	'form_onsave'=>'onsave_monitoring',
+	'form_delete'=>'disable_monitoring',
 	// поля
 	'fields'=>array(
 		'id'=>array(
@@ -50,7 +51,6 @@ $tables['monitoring']=array(
 			'label'=>'тип',
 			'type'=>'nofield',
 			'style'=>'width:130px',
-//			'list'=>array('switch'=>'свич','linux'=>'сервер Linux','mikrotik'=>'роутер Mikrotik'),
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
@@ -62,8 +62,13 @@ $tables['monitoring']=array(
 		),
 		'host_name'=>array(
 			'label'=>'хост',
-			'type'=>'nofield',
-			'style'=>'width:350px',
+			'type'=>'hidden',
+			'native'=>true,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'service_name'=>array(
+			'label'=>'сервис',
+			'type'=>'hidden',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
@@ -96,7 +101,7 @@ $tables['monitoring']=array(
 		),
 		'location'=>array(
 			'label'=>'Адрес',
-			'type'=>'nofield',
+			'type'=>'hidden',
 			'style'=>'width:350px;overflow:hidden;white-space:nowrap;',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
@@ -172,13 +177,17 @@ $tables['monitoring']=array(
 );
 
 function before_check_monitoring($f,$my) {
-	if(ICINGA_URL){
+	if(ICINGA_URL && isset($_REQUEST['do']) && $_REQUEST['do'] == 'save'){
 		$f['record'] = $my->separate($f['fields'],'old_');
+		log_txt(__FUNCTION__.": record".arrstr($f['record']));
+	}
+	if(isset($_REQUEST['do']) && $_REQUEST['do'] == 'realremove'){
+		$f['record'] = $my->separate(array('id'=>1,'display_name'=>1,'host_name'=>1,'service_name'=>1));
 	}
 	return $f;
 }
 
-function before_monitoring($f,$my) {
+function before_new_monitoring($f,$my) {
 	global $q, $DEBUG, $config, $opdata;
 	if(!is_object($q)) $q = new sql_query($config['db']);
 	$id = (isset($_REQUEST['id']))? numeric($_REQUEST['id']) : "";
@@ -258,7 +267,7 @@ function before_monitoring($f,$my) {
 				if(isset($service[0])) $service = $service[0];
 			}
 			$f['id'] = $dev['id'];
-			$f['record'] = array('id'=>$port['id'], 'host'=>$service['attrs']['host_name'], 'type'=>$service['attrs']['vars']['service_type'], 'servicetype'=>$type, 'host_name'=>$service['attrs']['host_name'], 'device'=>get_devname($dev), 'device_port'=>$service['attrs']['vars']['device_port'], 'display_name'=>$service['attrs']['display_name']);
+			$f['record'] = array('id'=>$port['id'], 'host'=>$service['attrs']['host_name'], 'type'=>$service['attrs']['vars']['service_type'], 'servicetype'=>$type, 'host_name'=>$service['attrs']['host_name'], 'service_name'=>$service['attrs']['name'], 'device'=>get_devname($dev), 'location'=>$service['attrs']['vars']['location'], 'device_port'=>$service['attrs']['vars']['device_port'], 'display_name'=>$service['attrs']['display_name']);
 			if(isset($service['attrs']['vars']['snmp_portid'])) $f['record']['snmp_portid'] = $service['attrs']['vars']['snmp_portid'];
 			if(isset($service['attrs']['vars']['macaddress'])) $f['record']['macaddress'] = $service['attrs']['vars']['macaddress'];
 		}elseif($client){
@@ -276,21 +285,26 @@ function before_monitoring($f,$my) {
 				$service = $mon->getService($client['id']);
 			}
 			$f['id'] = $client['id'];
-			$f['record'] = array('id'=>$client['id'], 'host'=>$service['attrs']['host_name'], 'type'=>$service['attrs']['vars']['service_type'], 'servicetype'=>$type, 'host_name'=>$service['attrs']['host_name'], 'device'=>get_devname($dev), 'device_port'=>$service['attrs']['vars']['device_port'], 'display_name'=>$service['attrs']['display_name']);
+			$f['record'] = array('id'=>$client['id'], 'host'=>$service['attrs']['host_name'], 'type'=>$service['attrs']['vars']['service_type'], 'servicetype'=>$type, 'host_name'=>$service['attrs']['host_name'], 'service_name'=>$service['attrs']['name'], 'device'=>get_devname($dev), 'location'=>$service['attrs']['vars']['location'], 'device_port'=>$service['attrs']['vars']['device_port'], 'display_name'=>$service['attrs']['display_name']);
 			if(isset($service['attrs']['vars']['snmp_portid'])) $f['record']['snmp_portid'] = $service['attrs']['vars']['snmp_portid'];
 			if(isset($service['attrs']['vars']['macaddress'])) $f['record']['macaddress'] = $service['attrs']['vars']['macaddress'];
 		}else{
 			stop("Ошибка данных!");
 		}
-		if($f['record']){
+		if($type != 'device'){
 			$f['footer'] = array(
-				"actionbutton"=>array("txt"=>'Отключить','style'=>"position:absolute;left:0;top:-5px",'onclick'=>"
-					var f = $(this).parents('form'), id = f.find('input[name=id]').val();
-					if(ldr) ldr.get({
-						data: 'go=devices&do=disableMon&id='+id,
-						onLoaded: function(d){}
+				"actionbutton"=>array("txt"=>'Отключить','style'=>"margin-right:30%",'onclick'=>"
+					var f = $(this).parents('form'),
+					id = f.find('input[name=id]').val(),
+					dn = f.find('[name=display_name]').val(),
+					hn = f.find('[name=host_name]').val(),
+					sn = f.find('input[name=service_name]').val();
+					if(ldr && id) ldr.get({
+						data: 'id='+id+'&servicetype='+type+'&host_name='+hn+'&service_name='+sn+'&display_name='+dn+'&go=stdform&do=realremove&table=monitoring',
+						onLoaded: function(d){
+							f.find('#cancelbutton').click();
+						}
 					})
-					f.find('#cancelbutton').click();
 				"),
 				"cancelbutton"=>array("txt"=>'Отменить'),
 				"submitbutton"=>array("txt"=>'Сохранить')
@@ -320,6 +334,10 @@ function before_monitoring($f,$my) {
 	return $f;
 }
 
+function before_edit_monitoring($f,$my) {
+	return before_new_monitoring($f,$my);
+}
+
 function before_save_monitoring($c,$o,$my) {
 	return $c;
 }
@@ -329,12 +347,13 @@ function save_monitoring($s,$my) {
 }
 
 function onsave_monitoring($id,$s,$my) {
-	global $q, $DEBUG, $config, $opdata;
+	global $q, $DEBUG, $config, $opdata, $tables;
+	log_txt(__FUNCTION__.": save = ".arrstr($s));
 	if(!is_object($q)) $q = new sql_query($config['db']);
 	if(ICINGA_URL){
 		$type = $_REQUEST['servicetype'];
 		$mon = new Icinga2();
-		$fld=array('id'=>1,'address'=>1,'display_name'=>1,'host_name'=>1);
+		$fld=array('id'=>1,'address'=>1,'display_name'=>1,'host_name'=>1,'service_name');
 		if($DEBUG>0) log_txt(__FUNCTION__.": save ".arrstr($s));
 		if($type == 'device'){
 			$object = $q->get('devices',$id);
@@ -349,11 +368,13 @@ function onsave_monitoring($id,$s,$my) {
 		}elseif($type == 'port' || $type == 'client'){
 			if(key_exists('operation',$s)) unset($s['operation']);
 			$service = array();
-			foreach($s as $k=>$v){
-				if(!key_exists($k,$fld)) $service['vars.'.$k] = $v; else $service[$k] = $v;
+			foreach($tables['monitoring']['fields'] as $k=>$v){
+				if($v['type']=='text' && isset($s[$k]))
+					if($k != 'display_name') $service['vars.'.$k] = $s[$k]; else $service[$k] = $s[$k];
 			}
-			$service['host_name'] = $my->row['host'];
-			$service['type'] = ($type == 'port')? "port" : "id";
+			$service['host_name'] = $my->row['host_name'];
+			$service['service_name'] = $my->row['service_name'];
+			if(!isset($service['display_name'])) $service['display_name'] = $my->row['display_name'];
 			if(!($res = $mon->updateService($service))){
 				log_txt(__FUNCTION__.": ошибка обновления сервиса: ".arrstr($service)." результат: ".arrstr($res));
 			}
@@ -375,9 +396,8 @@ function onsave_monitoring($id,$s,$my) {
 			$oldsw = array();
 			foreach($ng_switch as $nf=>$v) if(key_exists("old_".$nf,$_REQUEST)) $oldsw[$nf] = $_REQUEST["old_".$nf];
 			$modsw = $q->compare($oldsw,$dev);
-			if(count($modsw)==0){
-				stop(array('result'=>'OK', 'desc'=>"Изменения не требуются!"));
-			}
+			if(count($modsw)==0) stop(array('result'=>'OK', 'desc'=>"Изменения не требуются!"));
+
 			// выбираем неизменившийся параметр для однозначного определения свича
 			if(!isset($modsw['address'])) $obj = $ip = "address:".urlencode($_REQUEST['address']);
 			elseif(!isset($modsw['host_name'])) $obj = $hn = "host_name:".urlencode($_REQUEST['host_name']);
@@ -399,5 +419,14 @@ function onsave_monitoring($id,$s,$my) {
 			stop(array('result'=>'OK', 'desc'=>(CONFIGURE_NAGIOS>0)?"конфигурация NAGIOS обновлена!":""));
 		}
 	}
+}
+
+function disable_monitoring($s,$my){
+	log_txt(__FUNCTION__.": save = ".arrstr($s));
+	if(!@$s['host_name'] || !@$s['service_name'] || !@$s['display_name']) return 0;
+	$objects = array('name'=>$s['host_name']."!".$s['service_name'],'attrs'=>array('display_name'=>$s['display_name']));
+	$mon = new Icinga2();
+	$mon->safeRemoveServices(array($objects));
+	return 1;
 }
 ?>

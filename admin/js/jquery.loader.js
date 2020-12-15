@@ -1518,6 +1518,14 @@ M.Messendger = M.Class.extend({
 		if(el.msg.wstype == 'notify'){
 			$(div).on('mouseenter',function(){ self.pause(el); })
 			$(div).on('mouseleave',function(){ self.resume(el); })
+			$(div).on('click',function(e){
+				if(el.msg.object) M.storage.set('mapSearch',el.msg.object);
+				if(el.msg.device) ldr.get({
+					data:'go=devices&do=position&id='+el.msg.device,
+					onLoaded: function(d){ if(d.select) M.storage.set('mapSearch',d.select); },
+					showLoading: true
+				})
+			})
 		}
 		$(div).find('#close.button').on('click',function(e){
 			e.stopPropagation();
@@ -1559,8 +1567,7 @@ M.Messendger = M.Class.extend({
 				el.tmout = true;
 				el.tmint = setInterval(function(){
 					if(el.tmout){
-						if(el.onhide>=0) $(el.div).find('.send').html(el.onhide);
-						else self.hide(el);
+						if(el.onhide<=0) self.hide(el);
 						el.onhide--;
 					}
 				},1000);
@@ -1925,8 +1932,7 @@ M.Storage = M.Class.extend({
 			if(this.watch[e.key].ismain() && this.watch[e.key].handler){ // выполняется для главного окна
 				this.watch[e.key].handler(nv)
 				this.del(e.key);
-			}
-			if(this.watch[e.key].onchange){ // выполняется для подчиненного окна
+			}else if(this.watch[e.key].onchange){ // выполняется для любого окна
 				this.watch[e.key].onchange(nv)
 			}
 		}
@@ -1939,15 +1945,16 @@ M.Storage = M.Class.extend({
 	},
 	set: function(name, val){ // записывает данные в хранилище
 		if(this._storage[name] == val) return;
-		var o;
 		if(typeof val !== 'string') val = JSON.stringify(val);
 		this._storage[name] = val;
 		if(name in this.watch){
-			o = this.watch[name];
-			if(!this.get(o.type) && o.openmain)
+			var o = this.watch[name], t = this.get(o.type);
+			if(!t && o.openmain)
 				o.openmain(val); // выполняется если нет главного окна
-			else if(this._storage[o.type] == this._tab && o.onchange)
-				this.onStorageSaved({newValue:val,key:name}) // выполняется в главном окне
+			if(t && this._storage[o.type] == this._tab && o.onchange)
+				this.onStorageSaved({newValue:val,key:name}) // выполняется и в главном окне
+			if(t && this._storage[o.type] == this._tab && o.onlymain)
+				o.onlymain(val) // выполняется только в главном окне
 		}
 	},
 	del: function(name){ // удаляет параметр из хранилища
@@ -1973,6 +1980,12 @@ M.storage.addWatch('mapSearch',{
 	},
 	openmain: function(val){
 		this.mapWindow = window.open('maps.php?select='+val,'_map');
+	},
+	onlymain: function(val){ // выполняется только для главного окна
+		if(objects){
+			var o = objects.getObjectByID(val);
+			if(o) objects.Select(o);
+		}
 	},
 	focus: function(main){ // выполняется для окна при получении им фокуса
 		if(!main) return;

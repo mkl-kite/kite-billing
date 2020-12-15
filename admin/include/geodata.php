@@ -1020,11 +1020,15 @@ function deleteFeatures($ids) {
 	$del_ids=implode(',',$ids);
 	$f=$q->select("SELECT * FROM map WHERE id IN ($del_ids)");
 	$cables=array(); $nodes=array(); $mcables = array(); $clients = array(); $clientlog = array(); $nodelog = array(); $wifi = array();
+	if(ICINGA_URL){ if(!class_exists('Icinga2')) include_once "icinga.php"; $mon = new Icinga2(); }
 	foreach($f as $k=>$v) {
 		$del[]=$v['id'];
 		if($v['type']=='cable') $cables[] = $v['id'];
 		if($v['type']=='node') { $nodes[] = $v['id']; $nodelog[] = "{$v['address']} ({$v['id']})"; }
 		if($v['type']=='client') { $clients[] = $nodes[] = $v['id']; $clientlog[] = "{$v['name']}: {$v['address']}"; }
+		if(ICINGA_URL && ($v['type']=='client'||$v['type']=='home') && $v['hostname'] && $v['service'] && $mon){
+			$mon->removeService($v['hostname']."!".$v['service']);
+		}
 	}
 	if(count($clients)>0) {
 		$clcables = $q->fetch_all("SELECT c.object FROM map m, devices c WHERE m.id in (".implode(',',$clients).") AND c.type='cable' AND (c.node1 = m.id OR c.node2 = m.id)");
@@ -1042,6 +1046,9 @@ function deleteFeatures($ids) {
 				}
 			}else{
 				if($v['type']=='wifi' && $v['connect']) $wifi[] = $v['connect'];
+				if(($v['type']=='wifi'||$v['type']=='switch'||$v['type']=='server') && $v['ip'] && $v['community']){
+					if(ICINGA_URL && $mon) $mon->removeHost("id{$v}.".ICINGA_DOMAIN);
+				}
 				$devices[]=$v['id'];
 				$devlog[] = "{$objecttype[$v['type']]}[{$v['id']}]({$v['name']})";
 			}

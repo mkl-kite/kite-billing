@@ -537,7 +537,7 @@ function onsave_device($id,$save,$my) {
 		$mon = new Icinga2();
 		if(!$mon->updateHost($device)){
 			if($mon->code == 404 && !$mon->createHost($device))
-				log_txt("Icinga2 ошибка добавления свича: ".$mon->error);
+				log_txt("Icinga2 ошибка изменения хоста: ".$mon->error);
 		}
 		updateDbPorts($device);
 	}
