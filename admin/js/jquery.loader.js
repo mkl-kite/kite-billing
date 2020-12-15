@@ -20,6 +20,11 @@ Date.prototype.RuTime = function(o){
 	function f(v){return v.toString().replace(/^(.)$/,"0$1")};
 	return f(d.getHours())+":"+f(d.getMinutes());
 }
+Date.prototype.toLog = function(o){
+	var d = this;
+	function f(v){return v.toString().replace(/^(.)$/,"0$1")};
+	return d.getFullYear()+"-"+f(d.getMonth()+1)+"-"+f(d.getDate())+" "+f(d.getHours())+":"+f(d.getMinutes())+":"+f(d.getSeconds());
+}
 
 $.int2ip = function(ip){
 	var g = [16777216,65536,256],
@@ -1485,7 +1490,7 @@ M.Messendger = M.Class.extend({
 			el = {id:m.id,num:this._counter++,content:m.message.replace(/\n/g,'<br>'),status:1,msg:m};
 			console.log('Messendger.add: input message  N '+(el.num+1)+'  ('+(m.id?"id: "+m.id:m.message)+')');
 			if(m.wstype == 'message') el.sender = m.sender;
-			if(m.send) el.send = m.send; else el.send = Math.floor(o.interval.show/1000);
+			el.send = (m.send)? m.send : (new Date()).toLog();
 			this._list[el.num] = el;
 			el.div = this.create(el);
 			if(this.visible.length == 0 || this.forward){
