@@ -9,6 +9,7 @@ class Icinga2{
 		global $config;
 		$this->q = new sql_query($config['db']);
 		$this->error='';
+		$this->errors=array();
 	    $this->api = 'v1';
 	    $this->url = ICINGA_URL."/".$this->api;
 	    $this->login = ICINGA_LOGIN;
@@ -138,8 +139,7 @@ class Icinga2{
 	function getHostServices($host=null){ // возвращает все сервысы по устройству
 		if(!$host) return array();
 		if(is_numeric($host)){
-			$device = $this->q->select("SELECT d.*,m.address FROM devices d, map m WHERE d.node1=m.id AND d.id='$host'",1);
-			$name = "id{$device['id']}.{$this->domain}";
+			$name = "id{$host}.{$this->domain}";
 		}elseif(is_string($host) && preg_match('/^id/',$host)){
 			$name = $host;
 		}elseif(is_array($host) && isset($host['id'])){
@@ -197,7 +197,9 @@ class Icinga2{
 
 	function prepareHost($host=null){ // берёт данные из таблицы devices (нужен id)
 		if(is_numeric($host)) $host = $this->q->select("SELECT d.*,m.address FROM devices d, map m WHERE d.node1=m.id AND d.id='$host'",1);
-		if(is_array($host) && !key_exists('address',$host)) $host['address'] = $this->q->select("SELECT address FROM map WHERE id='{$host['node1']}'",4);
+		if(is_array($host) && isset($host['node1']) && !key_exists('address',$host))
+			$host['address'] = $this->q->select("SELECT address FROM map WHERE id='{$host['node1']}'",4);
+		if(!is_array($host) || !key_exists('address',$host)) return false;
 		return $host;
 	}
 
@@ -247,7 +249,7 @@ class Icinga2{
 	}
 
 	function createPortService($port){ // включает мониторинг порта на устройсвте
-		$service = $this->makePortService($port);
+		if(!($service = $this->makePortService($port))) return false;
 		return $this->createServices(array($service));
 	}
 
@@ -294,17 +296,25 @@ class Icinga2{
 		return $this->send($url,null,array('X-HTTP-Method-Override: DELETE'));
 	}
 
-    function deleteHost($host){ // выключает мониториг хоста и его сервисов
+    function deleteHost($id){ // выключает мониториг хоста и его сервисов
 		global $N3MODIFY;
-		$host = $this->prepareHost($host);
-		if(!$host || !isset($host['id'])) return false;
-		if(!($res = $this->removeHost("id{$host['id']}.{$this->domain}"))){
+		$device = $this->prepareHost($id);
+		if(!$device){
+			$this->errors[] = "Не найдено устройстов базе!";
+			if(!is_numeric($id) || !($host = $this->getHost($id))){
+				$this->errors[] = "Не найден хост!";
+				return false;
+			}
+			$device=array('id'=>$id,'address'=>$host['attrs']['vars']['location']);
+			$dev_name = $host['attrs']['display_name'];
+		}else $dev_name = get_devname($device,0,0);
+		if(!($res = $this->removeHost("id{$device['id']}.{$this->domain}"))){
 			if($this->code==404 && preg_match('/No objects found/',$this->error)) $this->error = "объект не найден";
-			$this->notify("Не получилось удалить <b>".get_devname($host,0,0)."</b> на <b>{$host['address']}</b>","error");
+			$this->notify("Не получилось удалить <b>$dev_name</b> на <b>{$device['address']}</b>","error");
 		}else{
 			$N3MODIFY = $this->q->fetch_all("SELECT id FROM map WHERE hostname='{$this->lastdeleted}'");
 			$this->q->query("UPDATE map SET hostname='', service='' WHERE hostname='{$this->lastdeleted}'");
-			$this->notify("<b>".get_devname($host,0,0)."</b> на <b>{$host['address']}</b> удалён вместе со всеми сервисами");
+			$this->notify("<b>$dev_name</b> на <b>{$device['address']}</b> удалён вместе со всеми сервисами");
 		}
 		return $res;
 	}
@@ -366,7 +376,7 @@ class Icinga2{
 		foreach($list as $k=>$s) {
 			if(!($res = $this->removeService($s['name']))){
 				log_txt("Ошибка удаления сервиса {$s['attrs']['display_name']}: ".$this->error);
-				$nodelete[] = $s['attrs']['display_name'];
+				$this->errors[] = $s['attrs']['display_name'];
 				$errors++;
 			}else{
 				$cl = $s['attrs']['display_name'];
@@ -374,7 +384,7 @@ class Icinga2{
 				if($del == 1) $rd = get_devname(preg_replace('/^id([0-9]+).*/','$1',$s['name']),0,0);
 			}
 		}
-		if($errors) $this->notify("Следующие объекты не были удалены:\n".implode(",\n",$nodelete),"error",false);
+		if($errors) $this->notify("Следующие объекты не были удалены:\n".implode(",\n",$this->errors),"error",false);
 		if($del) $this->notify("Удалено отслеживание ".(($del>1)?"<b>$del</b> объектов":"<b>$cl</b>")." на <b>$rd</b>");
 		return $del;
     }
@@ -387,6 +397,7 @@ class Icinga2{
 
     function createServices($data){ // добавляет сервисы найденные по cutClients
 		global $N3MODIFY, $devtype, $objecttype;
+		$this->errors = array();
 		$errors = $append = 0; $err = array();
 		if(is_numeric($data)) $id=$data;
 		elseif(is_array($data) && key_exists('porttype',$data)) $id = $data['id'];
@@ -410,9 +421,9 @@ class Icinga2{
 					if(!$this->createHost($s['rootid'])) return false;
 					continue;
 				}
-				$noservices[$errors] = "<b>{$this->errordata['attrs']['display_name']}</b>";
-				if($this->code==500 && preg_match('/already exists/',$this->error)) $noservices[$errors] .= " (уже существует)";
-				if($this->code==0) $noservices[$errors] .= " ".$this->error;
+				$this->errors[$errors] = "<b>{$this->errordata['attrs']['display_name']}</b>";
+				if($this->code==500 && preg_match('/already exists/',$this->error)) $this->errors[$errors] .= " (уже существует)";
+				if($this->code==0) $this->errors[$errors] .= " ".$this->error;
 				$errors++;
 			}else{
 				$N3MODIFY[] = $s['id'];
@@ -428,10 +439,10 @@ class Icinga2{
 			$i++;
 		}
 		if($errors){
-			$this->notify("Следующие объекты не были добавлены:\n".implode(",\n",$noservices),"error",false);
+			$this->notify("Следующие объекты не были добавлены:\n".implode(",\n",$this->errors),"error",false);
 			if($errors!=1){
 				log_txt("Icinga2: не получилось добавить $errors объектов");
-			}else log_txt("Icinga2: не получилось добавить объект. ".$noservices[0]);
+			}else log_txt("Icinga2: не получилось добавить объект. ".$this->errors[0]);
 		}
 		if($append) $this->notify((($append>1)?"По порту <b>$rp</b> д":"Д")."обавлено отслеживание ".
 			(($append>1)?"<b>$append</b> объектов!":"<b>$cl</b>")." на <b>$rd</b>");
@@ -441,6 +452,7 @@ class Icinga2{
 
     function deleteServices($data){ // удаляет сервисы найденные по cutClients
 		global $N3MODIFY, $devtype, $objecttype;
+		$this->errors = array();
 		$errors = $del = 0;
 		if(is_numeric($data)) $id=$data;
 		elseif(is_array($data) && isset($data[0]['object'])) $all = $data;
@@ -452,8 +464,8 @@ class Icinga2{
 		foreach($all as $i=>$s){
 			if(!$this->deleteService($s)){
 				log_txt("deleteService ".$this->error);
-				$nodelete[$errors] = "<b>{$s['attrs']['display_name']}</b>";
-				if($this->code==404 && preg_match('/No objects found/',$this->error)) $nodelete[$errors] .= " объект не найден ".$this->lastdeleted;
+				$this->errors[$errors] = "<b>{$s['attrs']['display_name']}</b>";
+				if($this->code==404 && preg_match('/No objects found/',$this->error)) $this->errors[$errors] .= " объект не найден ".$this->lastdeleted;
 				$errors++;
 			}else{
 				if($s['object'] != 'port'){
@@ -465,7 +477,7 @@ class Icinga2{
 			}
 		}
 		if(count($ds)) $this->q->query("UPDATE `map` SET hostname='', service='' WHERE service in (".implode(',',$ds).")");
-		if($errors) $this->notify("Следующие объекты не были удалены:\n".implode(",\n",$nodelete),"error",false);
+		if($errors) $this->notify("Следующие объекты не были удалены:\n".implode(",\n",$this->errors),"error",false);
 		if($del) $this->notify("Удалено отслеживание ".(($del>1)?"<b>$del</b> объектов":"<b>$cl</b>")." на <b>$rd</b>");
 		if(isset($N3MODIFY)) $N3MODIFY = array_unique($N3MODIFY);
 		return $del;

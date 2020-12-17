@@ -76,26 +76,30 @@ $tables['ports']=array(
 		),
 		'name'=>array(
 			'label'=>'название',
-			'type'=>'nofield',
+			'type'=>'text',
+			'style'=>'width:100px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5,'g'=>'map')
 		),
 		'number'=>array(
 			'label'=>'номер порта',
-			'type'=>'nofield',
+			'type'=>'text',
+			'style'=>'width:50px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5,'g'=>'map')
 		),
 		'snmp_id'=>array(
 			'label'=>'snmp id',
-			'type'=>'nofield',
+			'type'=>'text',
+			'style'=>'width:50px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5,'g'=>'map')
 		),
 		'vlan'=>array(
 			'label'=>'VLAN',
-			'type'=>'nofield',
+			'type'=>'text',
 			'native'=>false,
+			'style'=>'width:250px',
 			'style'=>'max-width:400px;white-space:auto;',
 			'access'=>array('r'=>3,'w'=>5,'g'=>'map')
 		),

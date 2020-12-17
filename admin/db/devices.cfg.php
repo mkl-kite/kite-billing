@@ -641,7 +641,7 @@ function delete_device($dev,$my) {
 		if($dev['type']=='switch' && $dev['community'] && $dev['ip']){
 			if(ICINGA_URL){
 				$mon = new Icinga2();
-				if(!$mon->deleteHost($dev['id'])) log_txt("Icinga2 ошибка уделения свича ({$dev['ip']}): ".$mon->error);
+				if(!$mon->deleteHost($dev['id'])) log_txt("Icinga2 ошибка уделения свича ({$dev['ip']}): ".arrstr($mon->errors));
 			}
 		}
 	}
@@ -717,7 +717,7 @@ function delete_devices($ids) {
 	if(count($sw)>0){
 		if(ICINGA_URL){
 			$mon = new Icinga2();
-			foreach($sw as $k=>$dev) if(!$mon->deleteHost($dev)) log_txt("Icinga2 ошибка уделения свича ({$dev['ip']}): ".$mon->error);
+			foreach($sw as $k=>$dev) if(!$mon->deleteHost($dev)) log_txt("Icinga2 ошибка уделения свича ({$dev['ip']}): ".arrstr($mon->errors));
 		}
 	}
 	if(!isset($out['delete']) && !isset($out['remove'])) return array('result'=>'ERROR','desc'=>'Объекты не удалены!');

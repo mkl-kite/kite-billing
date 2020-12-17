@@ -263,7 +263,7 @@ function before_new_monitoring($f,$my) {
 					}
 				}else $mon->createPortService($port);
 				$service = $mon->getPortService($port);
-				if(!$service) log_txt(__FUNCTION__.": не найден сервис! Данные запроса: ".arrstr($mon->lastdata));
+				if(!$service) stop("Не найден сервис!<br>".implode("<br>",$mon->errors));
 				if(isset($service[0])) $service = $service[0];
 			}
 			$f['id'] = $dev['id'];

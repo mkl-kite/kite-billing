@@ -33,6 +33,7 @@ class Form extends HtmlElement {
 	
 	private function checkCondition($o,$new=false,$old=false) { // делает проверки структуры конфигурации
 		global $_REQUEST, $DEBUG;
+		if(@is_string($o['before_check']) && function_exists($o['before_check'])) $o = $o['before_check']($o,$this);
 		if(isset($o['q']) && is_object($o['q'])){
 			$this->q_main = $this->q; $this->q = $o['q'];
 		}elseif(@$this->q_main){
@@ -265,7 +266,6 @@ class Form extends HtmlElement {
 		global $DEBUG;
 		$ftypes = array('text'=>0,'photo'=>1);
 		$rename=array();
-		if(@is_string($f['before_check']) && function_exists($f['before_check'])) $f = $f['before_check']($f,$this);
 		$opt=$this->checkCondition($f,$new,$old);
 		if($DEBUG>0) log_txt(__METHOD__.": `{$this->name}`\n---------------");
 		if(count($old)==0) $old = $this->separate($opt['fields'],'old_');
@@ -463,8 +463,12 @@ class Form extends HtmlElement {
 		if($DEBUG>0) log_txt(__METHOD__.":{$this->name} name: {$f['name']} id: {$f['id']}");
 		$opt = $this->checkCondition($f);
 		if($DEBUG>0) log_txt(__METHOD__.":{$this->name} checkCondition: ".arrstr(is_array($opt)));
-		$old = $this->row = $this->q->select($this->query,SELECT_FIRSTRECORD);
+
+		if(isset($this->record)) $old = $this->row = $this->record;
+		elseif(isset($opt['form_record']) && function_exists($opt['form_record'])) $old = $this->row = $opt['form_record']($opt['id'],$this);
+		else $old = $this->row = $this->q->select($this->query,SELECT_FIRSTRECORD);
 		if($DEBUG>0) log_txt(__METHOD__.":{$this->name} select: ".arrstr(is_array($old)));
+
 		if(!isset($this->id) || $this->id=='' || $this->id==0){
 			log_txt(__METHOD__.": `{$opt['name']}` не определен id = ".arrstr($this->id));
 			return array('result'=>"ERROR",'desc'=>"Ошибка при удалении");
@@ -511,7 +515,7 @@ class Form extends HtmlElement {
 			$d=$this->q->del($this->name,$this->id,$this->key);
 		}
 		// запись лога
-		if($this->log) dblog($this->name,$old,'del');
+		if($this->log && isset($this->q->tables[$opt['name']])) dblog($this->name,$old,'del');
 		// проверка уделения только одной записи
 		if(is_numeric($d) && $d!=1) {
 			log_txt("form->delete `{$opt['name']}` удалено: $d записей");
