@@ -283,6 +283,7 @@ DELIMITER ;;
 FOR EACH ROW
 BEGIN
 	DECLARE cable, pos int(10) UNSIGNED DEFAULT NULL;
+	DECLARE bp int(10) DEFAULT 24;
 	DECLARE msg varchar(255) DEFAULT '';
     IF OLD.type != NEW.type THEN
         SET msg=concat('Trying to change type of device ',NEW.type);
@@ -328,13 +329,14 @@ BEGIN
 
 	IF OLD.bandleports != NEW.bandleports OR OLD.colorscheme != NEW.colorscheme THEN
 		IF NEW.colorscheme != '' AND NEW.bandleports > 0 THEN
+			IF NEW.bandleports > 0 THEN SET bp = NEW.bandleports; END IF;
 			UPDATE devports p
-				LEFT OUTER JOIN devprofiles as dp ON dp.name=NEW.colorscheme AND dp.port=mod(p.number-1,NEW.bandleports)+1
-				LEFT OUTER JOIN devprofiles as dps ON dps.name=NEW.colorscheme AND dps.port=mod(p.number-2,NEW.bandleports)+1
-				LEFT OUTER JOIN devprofiles as dp1 ON dp1.name=NEW.colorscheme AND dp1.port=floor((p.number-1)/NEW.bandleports)+1
+				LEFT OUTER JOIN devprofiles as dp ON dp.name=NEW.colorscheme AND dp.port=mod(p.number-1,bp)+1
+				LEFT OUTER JOIN devprofiles as dps ON dps.name=NEW.colorscheme AND dps.port=mod(p.number-2,bp)+1
+				LEFT OUTER JOIN devprofiles as dp1 ON dp1.name=NEW.colorscheme AND dp1.port=floor((p.number-1)/bp)+1
 			SET
 				p.color=if(NEW.type!='splitter',if(dp.color IS NULL,'',dp.color),if(p.number=1,'white',if(dps.color IS NULL,'',dps.color))), 
-				p.bandle=if(NEW.numports<=NEW.bandleports OR NEW.bandleports=0 OR NEW.type!='cable','',if(dp1.color IS NULL,'',dp1.color)), 
+				p.bandle=if(NEW.numports<=bp OR NEW.type!='cable','',if(dp1.color IS NULL,'',dp1.color)), 
 				p.coloropt=if(NEW.type!='splitter',if(dp.option IS NULL,'',dp.option),'solid')
 			WHERE
 				p.device=NEW.id;
@@ -346,7 +348,6 @@ BEGIN
     IF OLD.numports > NEW.numports THEN
 		UPDATE `devports` SET link=NULL WHERE id IN (SELECT link FROM (SELECT * FROM `devports` WHERE `device`=OLD.id AND link IS NOT NULL AND `number`>NEW.numports) p);
 		DELETE FROM `devports` WHERE `device`=OLD.id AND `number`>NEW.numports;
-		CALL updateDivide(NEW.id,NEW.type,NEW.subtype);
     END IF;
 
 	IF OLD.type != 'cable' AND (OLD.node1 != NEW.node1 OR (OLD.node1 IS NULL AND NEW.node1 IS NOT NULL) OR (OLD.node1 IS NOT NULL AND NEW.node1 IS NULL)) THEN
@@ -366,6 +367,8 @@ BEGIN
 
 	IF OLD.numports < NEW.numports THEN
 		CALL CreatePorts(NEW.id,NEW.type,NEW.subtype,NEW.numports,NEW.node1,NEW.node2,NEW.bandleports,NEW.colorscheme);
+	END IF;
+	IF OLD.numports != NEW.numports OR OLD.subtype != NEW.subtype AND NEW.type in ('divisor','splitter') THEN
 		CALL updateDivide(NEW.id,NEW.type,NEW.subtype);
 	END IF;
 END */;;
@@ -2334,9 +2337,9 @@ BEGIN
 		SET pos = locate('/',subtype);
 		IF pos > 0 THEN
 			IF port = 2 THEN
-				SET mydivide = 100/substr(subtype,1,pos-1);
+				SET mydivide = substr(subtype,1,pos-1);
 			ELSE IF port = 3 THEN
-				SET mydivide = 100/substr(subtype,pos+1);
+				SET mydivide = substr(subtype,pos+1);
 			END IF; END IF;
 		ELSE
 			SET pos = locate('x',subtype);
