@@ -3026,10 +3026,11 @@ M.Port = M.TreeNode.extend({
 		}
 	},
 	makeTitle(d){
-		var t = [], k, join=d.linkport*1>0,
-		hud = this.makeHud();
+		var t = [], k, join=d.linkport*1>0, opt={}, hud = this.makeHud();
+		for(k in {id:0,device:0,number:0,node:0,porttype:0,note:0}) if(d[k]!='' && d[k]!=null) t.push(k+': '+d[k]);
 		if(d.mydevtype != 'switch') hud.splice(2,1);
 		if(join) hud.splice(0,1); else hud.splice(1,1);
+		if(this._header) $(this._header).attr({tytle:t.join("\r")}).css('background-color',((d.bandle)?d.bandle:'inherit'));
 		return [
 		$('<span>').append($('<div>').attr({class:'port',style:'border-style:'+((d.coloropt)?d.coloropt:'inherit')+((d.color)?';background-color:'+d.color:'')}).text(d.number)),
 		(join?' &rarr; ':((d.note)?'&emsp;&nbsp;<img src="pic/warn16.png"> '+d.note:'')),
@@ -3044,10 +3045,7 @@ M.Port = M.TreeNode.extend({
 		this.options = M.extend(this.options,{sort:0,hold:0});
 	},
 	onCreateElem: function(d){
-		var t=[], k, join=d.linkport*1>0;
-		for(k in {id:0,device:0,number:0,node:0,porttype:0,note:0}) if(d[k]!='' && d[k]!=null) t.push(k+': '+d[k]);
 		$(this._elem).attr({port:d.id});
-		$(this._header).attr({title:t.join("\r"),style:((d.bandle)?'background-color:'+d.bandle:'')});
 	},
 	onAdd: function(){
 		var p = this.parent.parent.options.data;

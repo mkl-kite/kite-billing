@@ -4,8 +4,8 @@ $menu = "maps.php";
 $CSSfile = array(
 	"js/leaflet.css",
 	"js/leaflet.draw.css",
-	"base-admin.css?ver=2020120902",
-	"base-map.css?ver=2020120301",
+	"base-admin.css",
+	"base-map.css",
 );
 $myscript=array(
 	"js/leaflet-src.js",

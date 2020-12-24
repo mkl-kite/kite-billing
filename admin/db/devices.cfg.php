@@ -6,6 +6,7 @@ $newcable=false;
 $modcable=false;
 $movedevice=false;
 $append_ports=false;
+$deleted_ports=false;
 
 $dev_fields_filter=array(
 	'cable'=>array('numports','colorscheme','n2address','bandleports','subtype','node2'),
@@ -378,7 +379,7 @@ function device_by_type($r) {
 }
 
 function before_save_device($c,$o,$my) {
-	global $DEBUG, $config, $newcable, $modcable, $movedevice, $modwifi, $dev_fields_filter;
+	global $DEBUG, $config, $newcable, $modcable, $movedevice, $modwifi, $dev_fields_filter, $deleted_ports, $append_ports;
 	$q = new sql_query($config['db']);
 	$r=array_merge($o,$c);
 
@@ -454,10 +455,16 @@ function before_save_device($c,$o,$my) {
 		if($DEBUG>0) log_txt(__function__.": очистка node2 для {$r['type']}[{$r['id']}]");
 	}
 
-	if($r['type']=='wifi' && $r['numports']<2) $c['numports']=2;
-	if($r['type']=='onu' && $r['numports']!=2) $c['numports']=2;
-	if($r['type']=='ups' && $r['numports']!=1) $c['numports']=1;
-	if($r['type']=='divisor' && $r['numports']!=3) $c['numports']=3;
+	if(key_exists('subtype',$c) && $r['type']=='splitter') {
+		$np = preg_replace('/\dx(\d+)/','$1',$c['subtype'])+1;
+		$oldnp = preg_replace('/\dx(\d+)/','$1',$o['subtype'])+1;
+		if($oldnp > $np) $deleted_ports = $my->q->fetch_all("SELECT id FROM devports WHERE device='{$r['id']}' AND number > $np");
+		if($oldnp < $np) $my->append_from = $oldnp;
+	}
+	if(key_exists('numports',$c) && $c['numports']!=$o['numports']){
+		if($o['numports'] > $c['numports']) $deleted_ports = $my->q->fetch_all("SELECT id FROM devports WHERE device='{$r['id']}' AND number > {$c['numports']}");
+		if($o['numports'] < $c['numports']) $my->append_from = $o['numports'];
+	}
 
 	if(key_exists('macaddress',$c) && $r['type']=='onu' && $o['macaddress']!='') {
 		if(ICINGA_URL && $c['macaddress'] == ''){
@@ -484,13 +491,17 @@ function check_device_for_save($r){
 	if($r['type']=='divisor' && $r['subtype']=='') {
 		stop(array('result'=>'ERROR','desc'=>'Не указан тип делителя!'));
 	}
+	if($r['type']=='splitter' && $r['subtype']=='') {
+		stop(array('result'=>'ERROR','desc'=>'Не указан тип сплиттера!'));
+	}
 	if($r['type']=='onu' && $r['macaddress']=='') {
 		stop(array('result'=>'ERROR','desc'=>'Не указан мак адрес!'));
 	}
 }
 
 function onsave_device($id,$save,$my) {
-	global $DEBUG, $config, $_REQUEST, $newcable, $dev_fields_filter, $tables, $devtype, $modcable, $movedevice, $modwifi, $N3MODIFY, $NAGIOS_ERROR;
+	global $DEBUG, $config, $_REQUEST, $newcable, $dev_fields_filter, $tables, $devtype, $modcable,
+		$movedevice, $modwifi, $N3MODIFY, $NAGIOS_ERROR, $deleted_ports, $append_ports;
 	$pass = array('divisor'=>0,'splitter'=>1,'switch'=>2,'wifi'=>3,'onu'=>4,'mconverter'=>5); // типы пасивных устройств
 	$fldmon = array('name'=>0,'ip'=>1,'community'=>2,'node1'=>3); // поля, при изменеии которых включается мониторинг
 	if($DEBUG>0) log_txt(__FUNCTION__.": id={$save['id']} SAVE: ".arrstr($save));
@@ -562,10 +573,16 @@ function onsave_device($id,$save,$my) {
 	}
 	$device['name'] = get_devname($device,$mynode,false);
 	$out[(($id=='new')?'append':'modify')]['devices']=array($device);
-	if(isset($save['colorscheme']) || isset($save['bandleports'])){
-		$out['modify']['ports']=get_modified_ports($device['id']);
-	}
+
 	if(isset($append_ports)) $out['append']['ports']=get_modified_ports($append_ports);
+	if(isset($save['numports']) || isset($save['subtype']) || isset($save['colorscheme']) || isset($save['bandleports'])){
+		if($mp = get_modified_ports($device['id'])){
+			foreach($mp as $k=>$p){
+				if(isset($my->append_from) && $p['number'] > $my->append_from) $out['append']['ports'][] = $p;
+				else $out['modify']['ports'][]=$p;
+			}
+		}
+	}
 	if(isset($deleted_ports)) $out['remove']['port']=$deleted_ports;
 	if(isset($N3MODIFY)) $out['modify']['GeoJSON'][]=getFeatureCollection($N3MODIFY);
 	return $out;
