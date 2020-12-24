@@ -8,6 +8,10 @@ $snmp_conf = array( // настройки для работы со свичам�
 	'version' => SNMP::VERSION_2c,
 	'cachetimeout' => 300,
 	'swChank'=>array('unknown'=>1),
+	'walk_timeout'=>10000000,
+	'walk_retries'=>1,
+	'gat_timeout'=>3000000,
+	'get_retries'=>1,
 	'oids' => array(
 		'ObjectID'=>array( // sysObjectID.0 (.1.3.6.1.2.1.1.2.0)
 			'.1.3.6.1.4.1.17409' => 'C-DATA',
@@ -137,6 +141,10 @@ class switch_snmp {
 		global $DEBUG, $config, $snmp_conf;
 		snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
 		$cfg = $this->cfg = $snmp_conf;
+		if(isset($cfg['walk_timeout'])) $this->walk_timeout = $cfg['walk_timeout']; else $this->walk_timeout = 3000000;
+		if(isset($cfg['walk_retries'])) $this->walk_retries = $cfg['walk_retries']; else $this->walk_retries = 2;
+		if(isset($cfg['get_timeout'])) $this->gat_timeout = $cfg['get_timeout']; else $this->get_timeout = 1000000;
+		if(isset($cfg['get_retries'])) $this->get_retries = $cfg['get_retries']; else $this->get_retries = 3;
 		if(isset($cfg['cachetimeout'])) $this->timeout = $cfg['cachetimeout']; else $this->timeout = 300;
 		if(isset($cfg['cachedir'])) $this->cachedir = $cfg['cachedir']; else $this->cachedir = '/tmp/';
 		$this->ip = isset($obj['ip'])? preg_replace('/[^0-9A-Za-z\.\-]/','',$obj['ip']) : '127.0.0.1';
@@ -170,7 +178,7 @@ class switch_snmp {
     }
 
     public function objecttype() {	// проверяет доступность и возвращает модель свича
-		global $cache;
+		global $cache, $DEBUG;
 		if(isset($cache['snmp'][$this->ip]['model'])){
 			if(!$this->sysname) $this->sysname = $cache['snmp'][$this->ip]['sysname'];
 			return $cache['snmp'][$this->ip]['model'];
@@ -186,7 +194,7 @@ class switch_snmp {
 					return $model;
 				}
 			}
-			log_txt("switch: {$this->ip}  model: {$res['model']}");
+			if($DEBUG>0) log_txt("switch: {$this->ip}  model: {$res['model']}");
 		}
 		return '';
     }
@@ -254,7 +262,7 @@ class switch_snmp {
 			if($m[2] && $m[3]){ $rg[2] = "/.{$m[3]}$/"; $rg1[2] = ""; $oid = $m[1]; }
 			elseif(!$m[2] && $m[3]){ $rg[1] = "/{$m[1]}.{$m[3]}./"; $oid = $m[1].".".$m[3]; }
 		}else{$rg = array('/^iso/',"/{$r['OID']}/"); $rg1 = array('.1',''); $oid = $r['OID']; }
-		$session = new SNMP($this->version, $this->ip, $this->community,1000000,3);
+		$session = new SNMP($this->version, $this->ip, $this->community,$this->walk_timeout,$this->walk_retries);
  		$session->oid_increasing_check = false;
 		$session->oid_output_format = SNMP_OID_OUTPUT_NUMERIC;
 		$tree = @$session->walk($oid);
@@ -305,7 +313,7 @@ class switch_snmp {
 			}
 		}
 		if(isset($r['timeout'])) $timeout = $r['timeout'];
-		if($DEBUG>2) log_txt(__METHOD__." {$this->ip} file {$r['file']} сущ: ".arrstr(file_exists($r['file']))." timeout: $timeout просрочен: ".arrstr(time() - filemtime($r['file']) < $timeout));
+		if($DEBUG>2) log_txt(__METHOD__." {$this->ip} file {$r['file']} сущ: ".(file_exists($r['file'])?"да":"нет")." timeout: $timeout просрочен: ".((time() - filemtime($r['file']) > $timeout)?"да":"нет"));
 		if(isset($r['file']) && file_exists($r['file']) && time() - filemtime($r['file']) < $timeout) {
 			if($DEBUG>2) log_txt(__METHOD__." {$this->ip} читаю OID ({$r['oid']}) из файла {$r['file']}");
 			$p = $this->read_from_cache($r['file']);
@@ -339,7 +347,7 @@ class switch_snmp {
 				if($oid != $v) $o[$oid] = $v;
 		}
 		if(!isset($r['OID'])) { $this->log(__METHOD__.": Не найден OID для {$this->ip}"); return false; }
-		if($short) $session = new SNMP($this->version, $this->ip, $this->community, 500000, 3);
+		if($short) $session = new SNMP($this->version, $this->ip, $this->community, $this->get_timeout, $this->get_retries);
 		else $session = new SNMP($this->version, $this->ip, $this->community);
 		$session->oid_output_format = SNMP_OID_OUTPUT_NUMERIC;
 		$chanks=0; $l = count($r['OID']); $i=0; $tree = array();
@@ -510,14 +518,14 @@ class switch_snmp {
 			$res = $cache['snmp'][$this->ip]['onusignal'];
 		}else{
 			$res = array();
+			$r['oid'] = 'rx_power';
+			$tree = $this->walk($r);
+			if(!$tree) return false;
 			$onu = $this->onufdb($r); // [macONU]=>portname
 			if(!$onu) return false;
 			$oid = $this->oids['rx_power']['OID'];
 			if(!$oid) log_txt(__METHOD__.": unknown switch type!");
 			$ports = array_flip($this->ports($r)); // [portname]=>portindex
-			$r['oid'] = 'rx_power';
-			$tree = $this->walk($r);
-			if(!$tree) return false;
 			foreach($tree as $index=>$signal) $power[(preg_replace('/\..*/','',$index))] = $signal;
 			foreach($onu as $mac=>$portname) {
 				$snmpindex = @$ports[$portname];
@@ -658,6 +666,7 @@ class switch_snmp {
 				$res[] = array('unit'=>$unit,'port'=>$port,'vlan'=>$vlan,'portname'=>$name,'portindex'=>$np,'mac'=>$mac);
 			}
 		}else{
+			include_once "telnet.php";
 			$data = getTelnetFdbBDCOM($this->ip);
 			foreach($ports as $snmpindex=>$p) $rports[$p['name']] = $snmpindex;
 			foreach($data as $v) {
@@ -709,7 +718,7 @@ class switch_snmp {
 		}elseif($from == 'Hex-STRING' && $to == 'STRING'){
 			$val = pack("H*", preg_replace(array('/\s*00\s*$/','/[^A-F0-9]/i'),array('',''),$v));
 		}else $val = $v;
-		if($DEBUG>0) log_txt(__METHOD__.": from: '$from' to: '$to' val: '$val'");
+		if($DEBUG>3) log_txt(__METHOD__.": from: '$from' to: '$to' val: '$val'");
 		return $val;
 	}
 

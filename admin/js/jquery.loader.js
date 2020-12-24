@@ -2021,6 +2021,7 @@ M.storage.addWatch('mapSearch',{
 					$('head link[rel$=icon]').attr({href:a[i++ % 2]})
 				}, 300);
 			}
+			M.storage.set('mapSearch',"");
 		}
 	}
 })

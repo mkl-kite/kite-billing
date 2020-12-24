@@ -387,43 +387,19 @@ class sql_query{
 		$this->nof = array_diff_key($a,$c);
 		if(count($this->nof)==0) unset($this->nof);// записываем неродные поля
 		$r=array();
-		foreach($c as $k=>$v) {
-			if($k!==$kf) {
-				$r[]="`$k`";
-			}
-		}
+		foreach($c as $k=>$v) if($k!==$kf) $r[]="`$k`";
 		return "(".implode(',',$r).")";
 	}
 
 	function create_insert($table,$a,$keyfield='id') {
-		if(is_array($a) && count($a)>0 && $table!='') {
-			$set=array();
-			$fld=array();
-			$multi=false;
-			foreach($a as $k=>$v) { 
-				if(is_array($v)) {
-					if(!$multi) {
-						if(!($fields=$this->create_fields($v,$keyfield,$table))) return false;
-						$multi=true;
-					}
-					if(!$set[]=$this->create_set($v,$keyfield,$table)) {
-						return false;
-					}
-				}else{
-					if(!($fields=$this->create_fields($a,$keyfield,$table))) return false;
-					if(!$set=$this->create_set($a,$keyfield,$table)) {
-						return false;
-					}
-					break;
-				}
-			}
-			if($multi) $sqlset=implode(',',$set); else $sqlset=$set;
-			$sql="INSERT INTO `$table` $fields VALUES $sqlset;";
-			return $sql;
-		}else{
-			$this->set_error(__METHOD__.": Ошибка формирования SQL: '{$table}[{$keyfield}]' arr=".sprint_r($a));
-			return false;
-		}
+		$set=array();
+		$r = reset($a);
+		if(!is_array($r)) $a = array($a);
+		if(!($fields=$this->create_fields(reset($a),$keyfield,$table))) return false;
+		foreach($a as $k=>$v)
+			if(!($set[]=$this->create_set($v,$keyfield,$table))) return false;
+		$sql = "INSERT INTO `$table` $fields VALUES ".implode(',',$set).";";
+		return $sql;
 	}
 
 	function create_update($table,$update,$keyfield=''){

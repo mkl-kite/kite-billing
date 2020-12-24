@@ -422,7 +422,6 @@ function onsave_monitoring($id,$s,$my) {
 }
 
 function disable_monitoring($s,$my){
-	log_txt(__FUNCTION__.": save = ".arrstr($s));
 	if(!@$s['host_name'] || !@$s['service_name'] || !@$s['display_name']) return 0;
 	$objects = array('name'=>$s['host_name']."!".$s['service_name'],'attrs'=>array('display_name'=>$s['display_name']));
 	$mon = new Icinga2();

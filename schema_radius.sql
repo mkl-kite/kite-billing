@@ -238,6 +238,7 @@ BEGIN
 	END IF;
 	
 	IF NEW.type = 'cable' AND NEW.object IS NOT NULL THEN
+		IF NEW.bandleports = 0 OR NEW.bandleports IS NULL THEN SET NEW.bandleports = 24; END IF;
 		SELECT id INTO cable FROM `devices` WHERE `object`=NEW.object;
 		IF cable IS NOT NULL THEN
 			SET msg=concat('Cable object ',NEW.object,' alredy exists!');
@@ -262,7 +263,7 @@ DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `after_insert_device` AFTER INSERT ON `devices`
 FOR EACH ROW
 BEGIN
-	CALL CreatePorts(NEW.id,NEW.type,NEW.subtype,NEW.numports,NEW.node1,NEW.node2);
+	CALL CreatePorts(NEW.id,NEW.type,NEW.subtype,NEW.numports,NEW.node1,NEW.node2,NEW.bandleports,NEW.colorscheme);
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -306,6 +307,9 @@ BEGIN
 		SET msg=concat('No subtype ',type,' ',NEW.id);
 		SIGNAL SQLSTATE '45000' SET message_text=msg;
 	END IF;
+	IF NEW.type = 'cable' AND NEW.bandleports = 0 OR NEW.bandleports IS NULL THEN
+		SET NEW.bandleports = 24;
+	END IF;
 
 	IF OLD.subtype != NEW.subtype THEN
 		IF NEW.type = 'divisor' THEN
@@ -319,6 +323,23 @@ BEGIN
 				SET NEW.subtype = '1x2';
 				SET NEW.numports = 3;
 			END IF;
+		END IF;
+	END IF;
+
+	IF OLD.bandleports != NEW.bandleports OR OLD.colorscheme != NEW.colorscheme THEN
+		IF NEW.colorscheme != '' AND NEW.bandleports > 0 THEN
+			UPDATE devports p
+				LEFT OUTER JOIN devprofiles as dp ON dp.name=NEW.colorscheme AND dp.port=mod(p.number-1,NEW.bandleports)+1
+				LEFT OUTER JOIN devprofiles as dps ON dps.name=NEW.colorscheme AND dps.port=mod(p.number-2,NEW.bandleports)+1
+				LEFT OUTER JOIN devprofiles as dp1 ON dp1.name=NEW.colorscheme AND dp1.port=floor((p.number-1)/NEW.bandleports)+1
+			SET
+				p.color=if(NEW.type!='splitter',if(dp.color IS NULL,'',dp.color),if(p.number=1,'white',if(dps.color IS NULL,'',dps.color))), 
+				p.bandle=if(NEW.numports<=NEW.bandleports OR NEW.bandleports=0 OR NEW.type!='cable','',if(dp1.color IS NULL,'',dp1.color)), 
+				p.coloropt=if(NEW.type!='splitter',if(dp.option IS NULL,'',dp.option),'solid')
+			WHERE
+				p.device=NEW.id;
+		ELSE
+			UPDATE devports p SET color='', coloropt='solid', bandle='' WHERE device=NEW.id;
 		END IF;
 	END IF;
 
@@ -344,7 +365,7 @@ BEGIN
 	END IF;
 
 	IF OLD.numports < NEW.numports THEN
-		CALL CreatePorts(NEW.id,NEW.type,NEW.subtype,NEW.numports,NEW.node1,NEW.node2);
+		CALL CreatePorts(NEW.id,NEW.type,NEW.subtype,NEW.numports,NEW.node1,NEW.node2,NEW.bandleports,NEW.colorscheme);
 		CALL updateDivide(NEW.id,NEW.type,NEW.subtype);
 	END IF;
 END */;;
@@ -2454,18 +2475,22 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `CreatePorts`(
     subtype varchar(32),
     port_num int(10),
     node1 int(10),
-    node2 int(10)
+    node2 int(10),
+    bandleports int(10),
+    colorscheme varchar(32)
 )
     SQL SECURITY INVOKER
 BEGIN
     
     DECLARE counter, slice, mynode, max_slice, min_ports, slices, config_id, port_formers_id, devtypes_id, devtype_id, porttypes_id int(10) DEFAULT 0;
+    DECLARE port_color, port_bandle varchar(32) DEFAULT '';
+    DECLARE port_option varchar(32) DEFAULT 'solid';
     DECLARE port_exists int(10) DEFAULT NULL;
     DECLARE mydivide double(6,2) DEFAULT NULL;
     DECLARE port_former, myporttype, div1, div2 varchar(32) DEFAULT NULL;
 	DECLARE msg varchar(255) DEFAULT '';
 
-    SELECT id INTO config_id FROM `settings` WHERE parent is NULL AND name='devices';
+	SELECT id INTO config_id FROM `settings` WHERE parent is NULL AND name='devices';
 
     IF config_id > 0 THEN
 		SELECT id INTO devtypes_id FROM `settings` WHERE name='device_types' AND parent=config_id;
@@ -2516,7 +2541,22 @@ BEGIN
 				SET port_exists = NULL;
 				SELECT id INTO port_exists FROM `devports`  WHERE `device` = dev AND `number` = counter AND `node` = mynode AND `porttype` = myporttype;
 				IF port_exists IS NULL THEN
-					INSERT INTO `devports` (`device`,`number`,`node`,`porttype`,`divide`) values (dev,counter,mynode,myporttype,mydivide);
+					IF colorscheme != '' AND bandleports > 0 THEN
+						IF type = 'splitter' THEN
+							SET port_color = '', port_option = 'solid', port_bandle = '';
+							IF counter = 1 THEN
+								SET port_color = 'white';
+							ELSE
+								SELECT `color` INTO port_color FROM devprofiles WHERE name = colorscheme AND port = mod(counter-2,bandleports)+1;
+							END IF;
+						ELSE
+							SELECT `color`, `option` INTO port_color, port_option FROM devprofiles WHERE name = colorscheme AND port = mod(counter-1,bandleports)+1;
+							IF type = 'cable' AND port_num > bandleports THEN
+								SELECT `color` INTO port_bandle FROM devprofiles WHERE name = colorscheme AND port = floor((counter-1)/bandleports)+1;
+							END IF;
+						END IF;
+					END IF;
+					INSERT INTO `devports` (`device`,`number`,`node`,`porttype`,`color`,`coloropt`,`bandle`,`divide`) values (dev,counter,mynode,myporttype,port_color,port_option,port_bandle,mydivide);
 				END IF;
 				SET counter = counter + 1;
 			END WHILE;

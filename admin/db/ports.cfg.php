@@ -453,7 +453,6 @@ function before_save_port($c,$o) {
 	return $c;
 }
 
-// сохранение данных парного порта
 function out_save_link_result($id,$saved,$my){
 	global $config, $modified_ports, $NAGIOS_ERROR, $N3MODIFY;
 	$fld=array('devid'=>'id', 'devtype'=>'type', 'subtype'=>'subtype', 'devname'=>'name', 'numports'=>'numports', 'ip'=>'ip', 'node1'=>'node1', 'node2'=>'node2', 'a1'=>'a1', 'a2'=>'a2');

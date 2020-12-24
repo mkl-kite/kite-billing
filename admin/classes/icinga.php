@@ -379,9 +379,12 @@ class Icinga2{
 				$this->errors[] = $s['attrs']['display_name'];
 				$errors++;
 			}else{
-				$cl = $s['attrs']['display_name'];
 				$del++;
-				if($del == 1) $rd = get_devname(preg_replace('/^id([0-9]+).*/','$1',$s['name']),0,0);
+				$cl = $s['attrs']['display_name'];
+				preg_match('/^(id([0-9]+).*)\!([a-z]+([0-9]+).*)/',$s['name'],$m);
+				$rd = ($del == 1 && $device)? get_devname($m[2],0,0) : null;
+				$this->q->query("UPDATE map SET hostname='', service='' WHERE hostname='{$m[1]}' AND service='{$m[3]}'");
+// 				log_txt(__METHOD__.": SQL: ".sqltrim($this->q->sql));
 			}
 		}
 		if($errors) $this->notify("Следующие объекты не были удалены:\n".implode(",\n",$this->errors),"error",false);

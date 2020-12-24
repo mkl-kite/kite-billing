@@ -294,7 +294,7 @@ function stop($out) {
 			if(@$out['append']['GeoJSON']) $ws['append']['GeoJSON'] = $out['append']['GeoJSON'];
 			if(isset($ws)){ $ws['wstype'] = 'update'; use_ws_server($ws); }
 		}
-		$out = json_encode($out);
+		$out = json_encode($out,JSON_UNESCAPED_UNICODE);
 		if($cb = @$_REQUEST['callback']) echo $cb."($out)";
 		else echo $out;
 	}else{
@@ -437,7 +437,7 @@ function use_ws_server($m){
 		if(isset($sender)) $m['sender'] = $sender;
 	}
 	if(is_array($m) && !isset($m['wstype'])) $m['wstype'] = 'message';
-	$m = json_encode($m);
+	$m = json_encode($m,JSON_UNESCAPED_UNICODE);
 	$len = strlen($m);
 	if(20*1024*1024 < $len){ log_txt(__FUNCTION__.": Ошибка! Слишком большое сообщение"); return false; }
 	$sl = chr($len>>24&0xFF).chr($len>>16&0xFF).chr($len>>8&0xFF).chr($len&0xFF);

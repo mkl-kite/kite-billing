@@ -443,16 +443,9 @@ function before_save_device($c,$o,$my) {
 	}
 
 	if(isset($c['colorscheme']) || isset($c['bandleports'])) {
-		if(!isset($dev_fields_filter[$r['type']]) || array_search('colorscheme',$dev_fields_filter[$r['type']])===false) { 
+		if(!isset($dev_fields_filter[$r['type']]) || array_search('colorscheme',$dev_fields_filter[$r['type']])===false) {
 			if($o['colorscheme'] != '') $c['colorscheme']=''; 
 			if(array_search('bandleports',$dev_fields_filter[$r['type']])===false) $c['bandleports']=0; 
-		}elseif($r['colorscheme']!='') {
-			if($r['bandleports']==0 || $r['bandleports']=='') $r['bandleports']=$c['bandleports']=24;
-			$bandleports = ($r['type']=='splitter' && $r['numports']==9)? 4 : $r['bandleports']; // для сплиттеров Lancore
-			update_colorscheme($r['id'],$r['colorscheme'],$bandleports);
-			if($DEBUG>0) log_txt(__function__.": замена цвет.схемы для {$r['type']}[{$r['id']}] на {$r['colorscheme']}");
-		}else{ 
-			$q->query("UPDATE devports SET color='', coloropt='solid', bandle='' WHERE device='{$r['id']}'");
 		}
 	}
 
@@ -465,10 +458,6 @@ function before_save_device($c,$o,$my) {
 	if($r['type']=='onu' && $r['numports']!=2) $c['numports']=2;
 	if($r['type']=='ups' && $r['numports']!=1) $c['numports']=1;
 	if($r['type']=='divisor' && $r['numports']!=3) $c['numports']=3;
-
-	if($r['type']=='splitter' && $r['subtype']!='') {
-		$c['numports'] = preg_replace('/1x/','',$r['subtype'])+1;
-	}
 
 	if(key_exists('macaddress',$c) && $r['type']=='onu' && $o['macaddress']!='') {
 		if(ICINGA_URL && $c['macaddress'] == ''){
@@ -485,27 +474,6 @@ function before_save_device($c,$o,$my) {
 		}
 	}
 	return $c;
-}
-
-function update_colorscheme($dev_id,$colorscheme,$bandle=24) {
-	global $config;
-	$q=new sql_query($config['db']);
-	if($bandle=='') $bandle=24;
-	$q->query("
-		UPDATE 
-			devports p 
-			LEFT JOIN devices d ON p.device=d.id 
-			LEFT JOIN map o ON d.object=o.id 
-			LEFT OUTER JOIN devprofiles as dp ON dp.name='{$colorscheme}' AND dp.port=mod(p.number-1,{$bandle})+1
-			LEFT OUTER JOIN devprofiles as dps ON dps.name='{$colorscheme}' AND dps.port=mod(p.number-2,{$bandle})+1
-			LEFT OUTER JOIN devprofiles as dp1 ON dp1.name='{$colorscheme}' AND dp1.port=floor((p.number-1)/{$bandle})+1
-		SET 
-			p.color=if(d.type!='splitter',dp.color,if(p.number=1,'white',dps.color)), 
-			p.bandle=if(d.numports<={$bandle} OR d.type!='cable','',dp1.color), 
-			coloropt=if(d.type!='splitter',dp.option,if(p.number=1,'solid',dps.option))
-		WHERE
-			p.device='{$dev_id}'
-	");
 }
 
 function check_device_for_save($r){

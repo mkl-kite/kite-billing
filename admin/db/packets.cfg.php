@@ -1,6 +1,8 @@
 <?php
 include_once("classes.php");
 include_once("table.php");
+$exist_iptv = key_exists('iptv',$q->table_fields('users'));
+$iptv = $exist_iptv? "sum(IF(u.user is not null AND u.iptv>DATE_ADD(now(),interval -1 month),1,0)) as live_iptv," : "";
 
 $tables['packets']=array(
 	'name'=>'packets',
@@ -35,7 +37,7 @@ $tables['packets']=array(
 			p.num,
 			p.name,
 			p.groupname,
-			p.fixed_cost,
+			p.fixed_cost,$iptv
 			sum(IF(u.user is not null AND u.last_connection>DATE_ADD(now(),interval -1 month),1,0)) as live,
 			sum(IF(u.user is not null AND u.last_connection between DATE_ADD(now(),interval -3 month) AND DATE_ADD(now(),interval -1 month),1,0)) as stale,
 			sum(IF(u.user is not null AND u.last_connection<DATE_ADD(now(),interval -3 month),1,0)) as lost,
@@ -162,7 +164,7 @@ $tables['packets']=array(
 			'access'=>array('r'=>1,'w'=>5)
 		),
 		'fixed_cost'=>array(
-			'label'=>'Фиксированная сумма',
+			'label'=>'абонплата',
 			'type'=>'text',
 			'class'=>'summ',
 			'style'=>'width:50px;text-align:right',
@@ -173,12 +175,10 @@ $tables['packets']=array(
 		'switched'=>array(
 			'label'=>'Разрешать пользователям переход на этот пакет',
 			'type'=>'checkbox',
-// 			'list'=>array('Нет','Да'),
-// 			'style'=>'width:60px',
 			'native'=>true,
 			'access'=>array('r'=>1,'w'=>5)
 		),
-		'hg'=>array( // hant group name
+		'hg'=>array(
 			'label'=>'Имя списка разрешенных NAS',
 			'type'=>'text',
 			'style'=>'width:170px',
@@ -192,7 +192,15 @@ $tables['packets']=array(
 			'native'=>true,
 			'access'=>array('r'=>1,'w'=>5)
 		),
-		'live'=>array( // simultaneous use
+		'live_iptv'=>array(
+			'label'=>'используют IPTV',
+			'type'=>'text',
+			'class'=>'summ',
+			'style'=>'width:50px',
+			'native'=>false,
+			'access'=>array('r'=>1,'w'=>5)
+		),
+		'live'=>array(
 			'label'=>'активных',
 			'type'=>'text',
 			'class'=>'summ',
@@ -200,7 +208,7 @@ $tables['packets']=array(
 			'native'=>false,
 			'access'=>array('r'=>1,'w'=>5)
 		),
-		'stale'=>array( // simultaneous use
+		'stale'=>array(
 			'label'=>'думающих',
 			'type'=>'text',
 			'class'=>'summ',
@@ -208,7 +216,7 @@ $tables['packets']=array(
 			'native'=>false,
 			'access'=>array('r'=>1,'w'=>5)
 		),
-		'lost'=>array( // simultaneous use
+		'lost'=>array(
 			'label'=>'Ушедших',
 			'type'=>'text',
 			'class'=>'summ',
@@ -216,7 +224,7 @@ $tables['packets']=array(
 			'native'=>false,
 			'access'=>array('r'=>1,'w'=>5)
 		),
-		'allusr'=>array( // simultaneous use
+		'allusr'=>array(
 			'label'=>'Всего',
 			'type'=>'text',
 			'class'=>'summ',

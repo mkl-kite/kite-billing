@@ -154,11 +154,11 @@ function get_pools() {
 }
 
 function get_sort_field($t) {
-	global $tables, $_REQUEST;
+	global $tables, $_REQUEST, $DEBUG;
 	if(!isset($_REQUEST['sort'])) return 'n.nasipaddress';
 	$sort = strict($_REQUEST['sort']);
 	if($sort != 'c' && $sort != 'c desc') $sort = 'n.'.$sort;
-	log_txt(__function__.": sort:$sort");
+	if($DEBUG>0) log_txt(__function__.": sort:$sort");
 	return $sort;
 }
 
