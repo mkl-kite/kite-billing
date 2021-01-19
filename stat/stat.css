@@ -12,17 +12,6 @@ html, body { height: 100%; margin:0px; }
 	display:none;
 	z-index:1000;
 }
-.contx {
-	position:fixed;
-	top:0;
-	left:0;
-	width:100%;
-	height:100%;
-	overflow:auto;
-	text-align:center;
-	z-index:1000;
-	background-color: rgba(0, 0, 0, 0);
-}
 .overlay > div {
 	height:100%;
 	display:inline-table;
@@ -42,20 +31,32 @@ html, body { height: 100%; margin:0px; }
 	width:100%;
 	text-align: center;
 	background: url("pic/motherboard.png") no-repeat;
-    -moz-background-size: 100%;
-    -webkit-background-size: 100%;
-    -o-background-size: 100%;
-	background-size: 100%;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+	overflow:hidden;
 }
-.container > div {
+
+.container > div.main {
 	display:inline-table;
 	height:100%
 }
-.container > div > div {
+.container > div.main > div {
 	display: table-cell;
 	vertical-align: middle;
 }
-
+.container > #menu {
+	position:absolute;
+	top:0;
+	left:0;
+ 	box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+	z-index: 10;
+}
+.container > #menu p.menu:hover {
+	background-color:#8aa;
+}
+	
 .header {
 	height:20%;
 	width:80%;
@@ -68,80 +69,87 @@ H1 {margin-bottom: 0px; bottom: 0px;}
 H2 {vertical-align:middle;text-align:left;margin:0px;}
 H3 {margin-bottom: 5px;}
 
-.inner TD, .outer TD {
-	border-radius: 15px;
-}
-.inner TD p, .outer TD p {
-	margin:0;
-	padding:10px;
-}
-.inner, .outer {
+#togglemenu { cursor:pointer; }
+
+.outer {
+	position:relative;
+	width:940px;
+	height:615px;
+	vertical-align:middle;
+	color:#fff;
+	border: 1px solid #034;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.7), inset rgba(255,255,255,0.3) 0 0 5px;
+	font-family: sans-serif;
+	font-size: 11pt;
+	text-decoration : none;
 	background-color:#004848;
 	border-radius: 15px;
 }
-.inner p.menu {
-	padding:10px 0 0 25px;
+.outer > div { position:relative; }
+.outer > div:first-child { top:10px; }
+.outer > div:last-child { top:20px; }
+
+.outer > div:first-child, .outer > div:last-child {
+	margin: 0 18px;
+	font:bold 120% sans;
+	height:35px;
+}
+.outer > div span#fio, .outer > div span#phone { float:left; }
+.outer > div span#address, .outer > div span#deposit { float:right; }
+
+.inner { position:relative; top:10px; }
+.inner > div { position: absolute; border-radius:15px; }
+.inner > div:first-child { left: 15px; overflow:hidden; }
+.inner > div:last-child { left: 350px; }
+.inner #menu p.menu { padding-bottom: 0; }
+
+#menu {
+	vertical-align: top;
+	border: 1px solid #034;
+	font: bold 12pt sans-serif;
+	color: #00b !important;
+	min-width: 320px;
+	background-color:#9EBCBE;
+	overflow-y:auto;
+}
+#menu p.menu {
+	margin:0;
+	padding: 10px 15px 15px 30px;
+	text-align:left;
 	text-shadow: 0 1px 1px rgba(0,0,64,0.8);
 }
-.inner p.menu:hover {
+#menu p.menu:hover {
 	color: #f0f8ff;
 	text-shadow: 0 1px 1px rgba(0,0,64,0.8);
 	transition: 0.5s;
 	cursor:pointer;
 }
-.inner p.menu a, .inner p.menu a:link, .inner p.menu a:visited {
+#menu p.menu a, #menu p.menu a:link, #menu p.menu a:visited {
 	color: inherit;
 	font: bold 12pt sans-serif;
 	text-decoration: none;
 }
-.inner p.menu a:hover {
+#menu p.menu a:hover {
 	color: #f0f8ff !important;
 	transition: 0.5s;
 }
-.outer {
-	width:100%;
-	min-width:600px;
-	max-width:900px;
-	height:70%;
-	min-height:350px;
-	max-height:800px;
-	vertical-align:middle;
-	border-spacing:0px;
-	color:#fff;
-	border: 1px solid #034;
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.7), inset rgba(255,255,255,0.3) 0 0 5px;
-}
-.outer > tbody > tr:first-child td, .outer > tbody > tr:last-child td {
-	padding:3px 10px;
-	font:bold 14pt sans;
-	height: 40px;
-}
-.outer > tbody > tr:first-child td { vertical-align:bottom; }
-.outer > tbody > tr:last-child td { vertical-align:top; }
-.inner {
-	height:100%;
-	border-spacing: 10px;
-}
-.inner > TBODY > TR > TD:first-child, a:visited, a:active {
-	width:30%;
-	min-width: 320px;
-	background-color:#9EBCBE;
-	border: 1px solid #034;
-	box-shadow: 0 0 5px rgba(0, 0, 0, 0.5) inset;
-	font: bold 12pt sans-serif;
-	color: #00b !important;
-}
-.inner > TBODY > TR > TD:first-child > FORM {
-	height:100%;
-}
-.inner > TBODY > TR > TD:last-child {
+
+div.data {
+	padding:15px;
 	background-color:#008080;
 	color: #FFFFFF;
-	vertical-align:top;
 	border: 1px solid #034;
 	box-shadow: 0 0 5px rgba(0, 0, 0, 0.5) inset;
-	min-width: 550px;
-	padding:15px;
+}
+
+#menu, a:visited, a:active {
+	border: 1px solid #034;
+	font: bold 12pt sans-serif;
+	color: #00b !important;
+	min-width: 320px;
+	background-color:#9EBCBE;
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.5) inset;
+	z-index: 10;
 }
 
 table.stat {
@@ -232,6 +240,7 @@ img { margin:0; padding:0; }
 	text-shadow: #630 0 1px 1px;
 	font-weight: bold;
 	color: #eefff0;
+	text-align:left;
 }
 .doc span {
 	padding-left:25px !important;
@@ -239,6 +248,10 @@ img { margin:0; padding:0; }
 .inner FORM {
 	position:relative;
 	margin:0px;
+}
+
+#content div.tarif {
+	text-align: left;
 }
 
 TABLE  {font-family: sans-serif; font-size: 11pt; text-decoration : none;}
@@ -290,17 +303,19 @@ TD.itog0  {
 }
 
 #content { 
-	min-width:550px;
+	height:100%;
 	box-sizing: border-box;
 	font-size: 12pt;
 	overflow-y: auto;
 }
 #content span.label {
+	display: inline-block;
 	min-width:200px;
 	text-align:right;
 	padding-right:5px;
 	display: inline-block;
 	vertical-align:top;
+	margin-bottom:10px;
 }
 #content span.data {
 	text-align:left;
@@ -309,6 +324,7 @@ TD.itog0  {
 	text-shadow: #630 0 1px 1px;
 	border: 1px solid #8aa;
 	padding:5px 10px;
+	white-space:nowrap;
 }
 #content [name] {
 	border: 1px solid #006565;

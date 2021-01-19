@@ -140,12 +140,12 @@ if(isset($_SESSION['sess_uid']) && $_SESSION['sess_ip'] == $_SERVER['REMOTE_ADDR
 	<div class="form-logo"><?php echo $config['authorize']['picture']; ?></div>
 	<fieldset>
 	<div class="form-item"><span class="label">логин</span><input id="login" type="text" name="auth_name"></div>
-	<div class="form-item"><span class="label">пароль</span><input id="pass" type="password" form-text" name="auth_pass"></div>
+	<div class="form-item"><span class="label">пароль</span><input id="pass" type="password" name="auth_pass"></div>
 	<div class="form-footer"><input type="submit" class="button" value="Войти"></div>
 	</fieldset>
 </form>
 </DIV></DIV>
-<?
+<?php
 	if(COMPANY_SOCIAL != 'COMPANY_SOCIAL'){
 		$links = array('vk'=>COMPANY_SOCIAL);
 		echo "<div class=\"social\">";
