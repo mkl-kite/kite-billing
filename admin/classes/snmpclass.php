@@ -544,8 +544,10 @@ class switch_snmp {
 		if($DEBUG>2) log_txt(__METHOD__." {$this->ip} $mac");
 		$res = $this->shortfdb($r);
 		if(count($res)==0) log_txt(__METHOD__." {$this->ip} адресов не найдено");
-		if(!isset($res[$mac])) return false;
-		return $res[$mac];
+		if(isset($res[$mac])) return $res[$mac];
+		elseif(isset($res[strtoupper($mac)])) return $res[strtoupper($mac)];
+		elseif(isset($res[strtolower($mac)])) return $res[strtolower($mac)];
+		return false;
 	}
 
 	public function onuport($r,$mac) {	// возвращает название порта по маку ONU (для BDCOM)
@@ -1120,7 +1122,7 @@ function pon_user_data($uid) { // формирует данные для таб�
 		$data['table'][] = array('param'=>$v['label'],'value'=>'Нет данных...');
 		$req['oid'][] = $k;
 	}
-	$data['info'] = array('ip'=>$switch['ip'], 'port'=>null, 'mac'=>$dev['macaddress']);
+	$data['info'] = array('ip'=>$switch['ip'], 'port'=>null, 'mac'=>strtoupper($dev['macaddress']));
 
 	$port = $sw->onuport($req,$dev['macaddress']);
 	if($port){

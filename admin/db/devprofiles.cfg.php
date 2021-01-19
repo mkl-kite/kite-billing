@@ -2,6 +2,25 @@
 include_once("classes.php");
 if(!$q) $q = sql_query($config['db']);
 
+$colors = array(
+	"aquamarine"	=>"аквамарин",
+	"white"			=>"белый",
+	"turquoise"		=>"бирюзовый",
+	"deepskyblue"	=>"голубой",
+	"yellow"		=>"желтый",
+	"green"			=>"зеленый",
+	"brown"			=>"коричневый",
+	"red"			=>"красный",
+	"neutral"		=>"нейтральный",
+	"unpainted"		=>"неокрашенный",
+	"orange"		=>"оранжевый",
+	"deeppink"		=>"розовый",
+	"gray"			=>"серый",
+	"blue"			=>"синий",
+	"purple"		=>"фиолетовый",
+	"black"			=>"черный",
+);
+
 $tables['devprofiles']=array(
 	'name'=>'devprofiles',
 	'title'=>'Объект',
@@ -17,9 +36,9 @@ $tables['devprofiles']=array(
 			id,
 			name,
 			port,
-			rucolor,
 			color,
 			option,
+			rucolor,
 			htmlcolor
 		FROM
 			devprofiles
@@ -31,7 +50,6 @@ $tables['devprofiles']=array(
 			id,
 			name,
 			port,
-			rucolor,
 			color,
 			option,
 			htmlcolor
@@ -60,10 +78,10 @@ $tables['devprofiles']=array(
 		'attribute'=>'reply_auto_attribute',
 		'op'=>'reply_auto_op',
 	),
-	'before_new'=>'before_new_rattribute',
-	'before_edit'=>'before_edit_rattribute',
-	'before_save'=>'before_save_rattribute',
-	'checks'=>'checks_rattribute',
+	'before_new'=>'before_new_devprofiles',
+	'before_edit'=>'before_edit_devprofiles',
+	'before_save'=>'before_save_devprofiles',
+	'checks'=>'checks_devprofiles',
 	'group'=>'',
 
 	// поля
@@ -74,95 +92,61 @@ $tables['devprofiles']=array(
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
-		'groupname'=>array(
-			'label'=>'профиль',
-			'type'=>'nofield',
+		'name'=>array(
+			'label'=>'Название',
+			'type'=>'text',
+			'style'=>'width:150px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
-		'attribute'=>array(
-			'label'=>'Атрибут',
-			'type'=>'autocomplete',
+		'port'=>array(
+			'label'=>'Номер п/п',
+			'type'=>'text',
 			'class'=>'nowr',
-			'style'=>'width:250px',
+			'style'=>'width:50px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
-		'op'=>array(
-			'label'=>'Операция',
-			'type'=>'autocomplete',
+		'option'=>array(
+			'label'=>'Метки',
+			'type'=>'select',
+			'list'=>array("solid"=>"без меток","dashed"=>"с метками"),
 			'class'=>'nowr ctxt',
-			'style'=>'width:60px',
+			'style'=>'width:110px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
-		'value'=>array(
-			'label'=>'Значение',
-			'type'=>'textarea',
-			'class'=>'note',
-			'style'=>'width:550px;height:80px',
+		'color'=>array(
+			'label'=>'Цвет',
+			'type'=>'select',
+			'list'=>$colors,
+			'style'=>'width:150px',
+			'native'=>true,
+			'access'=>array('r'=>3,'w'=>5)
+		),
+		'htmlcolor'=>array(
+			'label'=>'HTML цвет',
+			'type'=>'text',
+			'class'=>'nowr',
+			'style'=>'width:110px',
 			'native'=>true,
 			'access'=>array('r'=>3,'w'=>5)
 		),
 	),
 );
 
-function before_new_rattribute($f) {
+function before_new_devprofiles($f) {
 	global $config, $q, $DEBUG;
-	if(isset($_REQUEST['groupname']))
-		$f['defaults']['groupname'] = str($_REQUEST['groupname']);
-	$f['style']='width:700px';
 	return $f;
 }
 
-function before_edit_rattribute($f) {
+function before_edit_devprofiles($f) {
 	global $config, $q, $DEBUG;
-	$f['style']='width:700px';
 	return $f;
 }
 
-function checks_rattribute($r,$my) {
+function checks_devprofiles($r,$my) {
 	global $DEBUG, $config, $q;
 	if($DEBUG>0) log_txt(__function__.": start");
-}
-
-function reply_auto_attribute() {
-	global $config, $q;
-	$req = (isset($_REQUEST['req']))? str($_REQUEST['req']) : '';
-	$out['result'] = 'OK';
-	$out['complete'] = $q->select("
-		SELECT distinct attribute as label FROM devprofiles
-		WHERE attribute like '%$req%'
-		HAVING label!=''
-		ORDER BY attribute
-	");
-	return $out;
-}
-
-function reply_auto_op() {
-	global $config, $q;
-	$req = (isset($_REQUEST['req']))? str($_REQUEST['req']) : '';
-	$out['result'] = 'OK';
-	$out['complete'] = $q->select("
-		SELECT distinct op as label FROM devprofiles
-		WHERE op like '%$req%'
-		HAVING label!=''
-		ORDER BY op
-	");
-	return $out;
-}
-
-function build_filter_for_reply($t) {
-	global $tables, $_REQUEST;
-	$r = array(); $s = '';
-	$a = $tables[$t]['filters'];
-	if(is_array($a)){
-		foreach($a as $k=>$v){
-			if(isset($_REQUEST[$k]) && $v!='') $r[] = "AND `$k`='".str($_REQUEST[$k])."'";
-		}
-		$s .= implode(' ',$r);
-	}
- 	log_txt(__function__.": return: $s");
-	return $s;
 }
 ?>

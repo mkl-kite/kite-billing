@@ -121,42 +121,36 @@ switch($in['do']){
 
 	case 'auto_address':
 		$req = (key_exists('req',$_REQUEST))? str($_REQUEST['req']) : '';
-		$out['complete'] = $q->select("
-			SELECT
-				u.address as label,
-				u.user as name,
-				group_concat(f2.value) as macaddress
-			FROM users u
-				LEFT OUTER JOIN documents d ON d.uid=u.uid
-				LEFT JOIN docdata f1 ON d.id=f1.document AND f1.field='device' AND f1.value like '%ONU%'
-				LEFT JOIN docdata f2 ON d.id=f2.document AND f2.field='code'
-			WHERE u.address like '%$req%'
-			GROUP BY name
-			ORDER BY address
-			LIMIT 30
+		$d = $q->select("
+			SELECT uid, address as label, user as name, opt82 FROM users
+			WHERE address like '%$req%' ORDER BY address LIMIT 30
 		");
-		foreach($out['complete'] as $k=>$v) if(!$v['macaddress']) unset($out['complete'][$k]['macaddress']);
+		foreach($d as $k=>$v){
+			if($v['opt82'] && ($m = arrfld(parse_opt82($v['opt82']),'device'))) $v['macaddress'] = $m;
+			if(!$v['macaddress']) $v['macaddress'] = $q->select("SELECT value FROM documents d, docdata f WHERE d.uid='{$v['uid']}' AND
+				type='warranty' AND d.id=f.document AND f.field='code' ORDER BY d.created DESC LIMIT 1",4);
+			if(!$v['macaddress']) unset($v['macaddress']);
+			unset($v['opt82']); unset($v['uid']);
+			$out['complete'][] = $v;
+		}
 		stop($out);
 		break;
 
 	case 'auto_name':
 		$req = (key_exists('req',$_REQUEST))? str($_REQUEST['req']) : '';
 		$out['result'] = 'OK';
-		$out['complete'] = $q->select("
-			SELECT
-				u.user as label,
-				u.address,
-				group_concat(f2.value) as macaddress
-			FROM users u
-				LEFT OUTER JOIN documents d ON d.uid=u.uid
-				LEFT JOIN docdata f1 ON d.id=f1.document AND f1.field='device' AND f1.value like '%ONU%'
-				LEFT JOIN docdata f2 ON d.id=f2.document AND f2.field='code'
-			WHERE u.user like '%$req%'
-			GROUP BY user
-			ORDER BY user
-			LIMIT 30
+		$d = $q->select("
+			SELECT uid, user as label, address, opt82 FROM users
+			WHERE user like '%$req%' ORDER BY user LIMIT 30
 		");
-		foreach($out['complete'] as $k=>$v) if(!$v['macaddress']) unset($out['complete'][$k]['macaddress']);
+		foreach($d as $k=>$v){
+			if($v['opt82'] && ($m = arrfld(parse_opt82($v['opt82']),'device'))) $v['macaddress'] = $m;
+			if(!$v['macaddress']) $v['macaddress'] = $q->select("SELECT value FROM documents d, docdata f WHERE d.uid='{$v['uid']}' AND
+				type='warranty' AND d.id=f.document AND f.field='code' ORDER BY d.created DESC LIMIT 1",4);
+			if(!$v['macaddress']) unset($v['macaddress']);
+			unset($v['opt82']); unset($v['uid']);
+			$out['complete'][] = $v;
+		}
 		stop($out);
 		break;
 

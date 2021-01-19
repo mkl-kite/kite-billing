@@ -1152,7 +1152,7 @@ $(document).ready(function() {
 			{name:'список серверов',link:'go=devices&do=listservers'},
 			{name:'список свичей',link:'go=devices&do=listswitches'},
 			{name:'список базовых станций Wi-Fi',link:'go=devices&do=listwifi'},
-			{name:'список шаблонов',link:'go=devices&do=getcolorscheme'}
+			{name:'список шаблонов',link:'go=stdform&do=edit&table=devprofiles&tname=devprofiles'}
 		], 
 		function(obj){
 			$.popupForm({
