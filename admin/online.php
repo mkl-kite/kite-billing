@@ -25,9 +25,8 @@ $(document).ready(function(){
 });
 </script>
 <?php
-$intday=(isset($_REQUEST['intday']))? $_REQUEST['intday'] : 0;
-$inthour=(isset($_REQUEST['inthour']))? $_REQUEST['inthour'] : 0;
-$order=(isset($_REQUEST['order']))? numeric($_REQUEST['order']) : 0;
+$intday=(isset($_REQUEST['intday']))? numeric($_REQUEST['intday']) : 0;
+$inthour=(isset($_REQUEST['inthour']))? numeric($_REQUEST['inthour']) : 0;
 ?>
 <CENTER>
 <?php
@@ -44,22 +43,25 @@ $prev2='&intday='.($intday-1).'&'.$ih;
 $prev3='&intday='.($intday-60).'&'.$ih;
 ?>
 <p>
-<center>
 <a class="button" href='online.php?go="chartlist"<?php echo $next3; ?>' title="назад 60 дней">&lt;&lt;&lt;</a>&nbsp;
 <a class="button" href='online.php?go="chartlist"<?php echo $next2; ?>' title="назад 1 день">&lt;&lt;</a>&nbsp;
 <a class="button" href='online.php?go="chartlist"<?php echo $next1; ?>' title="назад 6 часов">&lt;</a>&nbsp;
 <a class="button" href='online.php?go="chartlist"<?php echo $prev1; ?>' title="вперед 6 часов">&gt;</a>&nbsp;
 <a class="button" href='online.php?go="chartlist"<?php echo $prev2; ?>' title="вперед 1 день">&gt;&gt;</a>&nbsp;
 <a class="button" href='online.php?go="chartlist"<?php echo $prev3; ?>' title="вперед 60 дней">&gt;&gt;&gt;</a>
-</center>
 </p>
+<div class="chartlist" style="text-align:center">
 <p><IMG class="diagram" SRC="charts/users_online.php?class=counter&period=1<?php echo $add; ?>"></p>
 <p><IMG class="diagram" SRC="charts/users_online.php?class=counter&period=7<?php echo $add; ?>"></p>
 <p><IMG class="diagram" SRC="charts/users_online.php?class=counter&period=365<?php echo $add; ?>"></p>
+<p><IMG class="diagram" SRC="charts/users_online.php?class=iptv&period=1<?php echo $add; ?>"></p>
+<p><IMG class="diagram" SRC="charts/users_online.php?class=iptv&period=7<?php echo $add; ?>"></p>
+<p><IMG class="diagram" SRC="charts/users_online.php?class=iptv&period=365<?php echo $add; ?>"></p>
+</div>
 <?php
 } else {
 	if ($opdata['status']>3) { ?> 
-	<p><A HREF="online.php?go=chartlist"><IMG id="online" class="diagram" SRC="charts/users.php" border="0" width="700" height="200"></A></p><HR><?php
+	<p><A HREF="online.php?go=chartlist"><IMG id="online" class="diagram" SRC="charts/users.php?class=counter" border="0" width="700" height="200"></A></p><HR><?php
 	}
 	?><br>
 	<div class="tablecontainer" query="go=stdtable&do=radacct&tname=radacct" style="max-width:90%"></div><?php

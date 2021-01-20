@@ -50,7 +50,7 @@ if($guest) {
 <?php if($guest) echo "<DIV class=\"efforts".(($efforts==0)?'_red':'')."\">$msg</DIV>"; ?>
 <div class="outer">
 	<div class="topinfo">
-		<span id="fio"><?php echo $client['fio']." (".$client['contract'].")"; ?></span>
+		<span id="fio"><?php echo shortfio($client['fio'])." (".$client['contract'].")"; ?></span>
 		<span id="address"><?php echo $client['address']; ?></span>
 	</div>
 
@@ -61,7 +61,7 @@ if($guest) {
 	foreach($config['menu'] as $k=>$v) {
 		if($v['enable']) echo "<p class=\"menu\" go=\"{$v['module']}\" do=\"$k\">{$v['label']}</p>\n";
 	}
-	echo "<p class=\"menu\"><a href=\"index.php?go=logout\">выйти</a></p>";
+	echo "<p class=\"menu\" go=\"logout\">выйти</p>";
 ?>
 		</div>
 		<div class="data">

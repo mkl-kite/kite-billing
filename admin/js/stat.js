@@ -1,8 +1,8 @@
 $(document).ready(function() {
 	var ldr = $.loader(), prevH=5000, prevW=5000;
 	var clickMenu = function(e){
-		var $do = $(this).attr('do'),
-		$go = $(this).attr('go');
+		var $do = $(this).attr('do'), $go = $(this).attr('go');
+		if($go == 'logout') window.open($.paramToURL({go:'logout'}),'_self');
 		if(!$do || !$go) return;
 		ldr.get({
 			data: 'go='+$go+'&do='+$do,
@@ -21,9 +21,6 @@ $(document).ready(function() {
 		if(e.detail.dir == 'left'){
 			$('.container > #menu').hide('slide',{direction:'left'},400);
 		}
-// 		if(e.detail.dir == 'right'){
-// 			$('.container > #menu').show('slide',{direction:'left'},400);
-// 		}
 	}
 	$(window).resize(function(e){
 		var

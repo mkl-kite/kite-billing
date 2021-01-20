@@ -1989,7 +1989,11 @@ M.storage.addWatch('mapSearch',{
 	onlymain: function(val){ // выполняется только для главного окна
 		if(objects){
 			var o = objects.getObjectByID(val);
-			if(o) objects.Select(o);
+			if(o){
+				if(objects.isSelected(o)) objects.deSelect(o);
+				objects.Select(o);
+			}
+			M.storage.set('mapSearch',"");
 		}
 	},
 	focus: function(main){ // выполняется для окна при получении им фокуса

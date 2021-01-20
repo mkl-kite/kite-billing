@@ -1288,6 +1288,7 @@ function unids($s) {
 	return $r;
 }
 
+function filever($file){ if(!file_exists($file)) return $file; return "{$file}?ver=".date('YmdHis',filemtime($file)); }
 function arrfld($arr=array(),$field='id') {if(isset($arr[$field])) return $arr[$field]; else return false;}
 function quote($a) {if(is_array($a)){foreach($a as $k=>$v) $a[$k]="'$v'";return $a;}else return "'$a'";}
 function photo_link($s) {$l=(PHOTO_TARGET==1)? PHOTO_FOLDER:"photo.php?id="; return ($s)? $l.$s:"pic/unknown.png";}
