@@ -49,7 +49,7 @@ if (isset($_SESSION['sess_user_id']) AND $_SESSION['sess_ip'] == $_SERVER['REMOT
 	log_txt("sess_ip=".$_SESSION['sess_ip']."REMOTE_ADDR=".$_SERVER['REMOTE_ADDR']);
 	$out['result']="close";
 	$out['action']="reload";
-	echo json_encode($out);
+	echo json_encode($out,JSON_UNESCAPED_UNICODE);
 }else{
 ?>
 <!DOCTYPE html PUBLIC

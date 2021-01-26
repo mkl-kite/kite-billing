@@ -1525,7 +1525,7 @@ M.Messendger = M.Class.extend({
 			$(div).on('mouseleave',function(){ self.resume(el); })
 			$(div).on('click',function(e){
 				if(el.msg.object) M.storage.set('mapSearch',el.msg.object);
-				if(el.msg.device) ldr.get({
+				else if(el.msg.device) ldr.get({
 					data:'go=devices&do=position&id='+el.msg.device,
 					onLoaded: function(d){ if(d.select) M.storage.set('mapSearch',d.select); },
 					showLoading: true

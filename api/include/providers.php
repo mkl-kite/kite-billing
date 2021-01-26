@@ -58,7 +58,7 @@ class ProviderXXX {
 
 	private function createResponce($r) {
 #		$r = conv_utf($r);
-		$result = json_encode($r);
+		$result = json_encode($r,JSON_UNESCAPED_UNICODE);
 		if(!$result) log_txt(__method__.": ERROR: ".json_error_str(json_last_error()));
 		return $result;
 	}
@@ -141,7 +141,7 @@ class ProviderJSON {
 
 	private function createResponce($r) {
 #		$r = conv_utf($r);
-		$result = json_encode($r);
+		$result = json_encode($r,JSON_UNESCAPED_UNICODE);
 		if(!$result) log_txt(__method__.": ERROR: ".json_error_str(json_last_error()));
 		return $result;
 	}

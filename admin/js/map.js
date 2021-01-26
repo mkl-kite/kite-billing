@@ -28,6 +28,10 @@ function getFadeStyle(value){
 	return n;
 }
 
+function imgRotate(period){
+	return '&val='+(Math.floor((new Date()).getTime()/(period*1000))*period);
+}
+
 (function ($) {
 $.each(['show', 'hide'], function (i, ev) {
 	var el = $.fn[ev];
@@ -1024,7 +1028,7 @@ $(document).ready(function() {
 		})
 		e.layer.on('mouseover', function(e){
 			var state = '<span style="float:right">PON'+((p.state>3)? ': Уровень сигнала: -'+p.state+'Дб':'')+'</span>';
-			info.set({usrchart: 'charts/traffic.php?user='+p.name, user: p.address+state})
+			info.set({usrchart: 'charts/traffic.php?user='+p.name+imgRotate(300), user: p.address+state})
 		})
 		e.layer.on('mouseout', function(e){
 			info.set()
@@ -1052,7 +1056,7 @@ $(document).ready(function() {
 		})
 		e.layer.on('mouseover', function(e){
 			var state = '<span style="float:right">FTTH</span>';
-			info.set({usrchart: 'charts/traffic.php?user='+p.name, user: p.address+state})
+			info.set({usrchart: 'charts/traffic.php?user='+p.name+imgRotate(300), user: p.address+state})
 		})
 		e.layer.on('mouseout', function(e){
 			info.set()
@@ -1086,7 +1090,7 @@ $(document).ready(function() {
 				tracewifi = L.layerGroup([line]).addTo(map);
 			}
 			var state = '<span style="float:right">'+a+'Wi-Fi</span>';
-			info.set({usrchart: 'charts/traffic.php?user='+p.name, user: p.address+state})
+			info.set({usrchart: 'charts/traffic.php?user='+p.name+imgRotate(300), user: p.address+state})
 			return false
 		})
 		e.layer.on('mouseout', function(e){
@@ -1152,7 +1156,7 @@ $(document).ready(function() {
 			{name:'список серверов',link:'go=devices&do=listservers'},
 			{name:'список свичей',link:'go=devices&do=listswitches'},
 			{name:'список базовых станций Wi-Fi',link:'go=devices&do=listwifi'},
-			{name:'список шаблонов',link:'go=stdform&do=edit&table=devprofiles&tname=devprofiles'}
+			{name:'список шаблонов',link:'go=devices&do=getcolorscheme'}
 		], 
 		function(obj){
 			$.popupForm({
@@ -1208,7 +1212,7 @@ $(document).ready(function() {
 
 
 	$('#objects').on('mouseover','li[user]',function(e) { //	Показывает диаграмму по пользователю
-		info.set({usrchart: 'charts/traffic.php?user='+$(this).attr('user'), user: $(this).attr('user')})
+		info.set({usrchart: 'charts/traffic.php?user='+$(this).attr('user')+imgRotate(300), user: $(this).attr('user')})
 		return false
 	})
 

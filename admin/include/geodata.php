@@ -1135,7 +1135,7 @@ function n3removeservice($port,$save='no',$restart='no'){ // удаление с
 			$hs[$v['hostname']][$v['service']] = $v['id'];
 	}
 	foreach($hs as $k=>$v) $r[$k] = array_keys($v);
-	$req = "do=service_del&objects=".urlencode(json_encode($r))."&realsave=$save&restart=$restart";
+	$req = "do=service_del&objects=".urlencode(json_encode($r,JSON_UNESCAPED_UNICODE))."&realsave=$save&restart=$restart";
 	if(!($res = get_nagios($req,'data'))) return false;
 	$ids = array();
 	foreach($res['deleted'] as $k=>$s) {
@@ -1191,7 +1191,7 @@ function n3createservice($id,$save='no',$restart='no'){ // создание се
 		$r[$s['address']] = $o['id'];
 	}
 //	log_txt(__FUNCTION__.": hs = ".sprint_r($hs));
-	$req = "do=service_add&objects=".urlencode(json_encode($hs))."&realsave=$save&restart=$restart";
+	$req = "do=service_add&objects=".urlencode(json_encode($hs,JSON_UNESCAPED_UNICODE))."&realsave=$save&restart=$restart";
 	if(!($res = get_nagios($req,'data'))) return false;
 	foreach($res['created'] as $sw=>$list) {
 		foreach($list as $s=>$id) {

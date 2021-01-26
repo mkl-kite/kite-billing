@@ -385,7 +385,7 @@ function onsave_monitoring($id,$s,$my) {
 			$new_sw = array('host_name'=>1,'alias'=>2,'address'=>3,'community'=>4,'parents'=>5);
 			$dev = array_intersect_key($_REQUEST,$new_sw);
 			if(CONFIGURE_NAGIOS>0)
-			if(!($ng = get_nagios("do=switch_add&switch=".urlencode(json_encode($dev)).
+			if(!($ng = get_nagios("do=switch_add&switch=".urlencode(json_encode($dev,JSON_UNESCAPED_UNICODE)).
 				"&realsave={$s['realsave']}&restart={$s['restart']}","data")))
 				stop($NAGIOS_ERROR);
 			return array('result'=>'OK', 'desc'=>(CONFIGURE_NAGIOS>0)?"конфигурация NAGIOS обновлена!":"");
@@ -409,7 +409,7 @@ function onsave_monitoring($id,$s,$my) {
 				stop(array('result'=>'ERROR', 'desc'=>"Свич HOST_NAME={$modsw['host_name']} уже есть!"));
 			// собственно обновление информации по свичу в nagios
 			if(CONFIGURE_NAGIOS>0) {
-				if(!($ng = get_nagios("do=switch_mod&objects=$obj&switch=".urlencode(json_encode($modsw)).
+				if(!($ng = get_nagios("do=switch_mod&objects=$obj&switch=".urlencode(json_encode($modsw,JSON_UNESCAPED_UNICODE)).
 					"&realsave={$_REQUEST['realsave']}&restart={$_REQUEST['restart']}",'data'))){
 					stop(array('result'=>'ERROR', 'desc'=>preg_replace('/\n/','<br>',$NAGIOS_ERROR['desc'])));
 				}

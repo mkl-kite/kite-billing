@@ -42,7 +42,7 @@ class Icinga2{
 		if(count($opts)>0) foreach($opts as $k=>$v) $opt[$k] = $v;
 		if($data){
 			$this->lastdata = $data;
-			$json = json_encode($data);
+			$json = json_encode($data,JSON_UNESCAPED_UNICODE);
 			array_push($opt[CURLOPT_HTTPHEADER],'Content-Length: '.strlen($json));
 			if(!@$opt[CURLOPT_CUSTOMREQUEST]) $opt[CURLOPT_POST] = 1;
 			$opt[CURLOPT_POSTFIELDS] = $json;

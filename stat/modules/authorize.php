@@ -75,7 +75,7 @@ if(isset($_SESSION['sess_uid']) && $_SESSION['sess_ip'] == $_SERVER['REMOTE_ADDR
 }elseif(@$_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
 	log_txt("неавторизованное соединение ip: ".$_SERVER['REMOTE_ADDR']);
 	$out['result']="close";
-	echo json_encode($out);
+	echo json_encode($out,JSON_UNESCAPED_UNICODE);
 	exit;
 }else{
 ?>
