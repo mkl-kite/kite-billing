@@ -10,7 +10,7 @@ $snmp_conf = array( // настройки для работы со свичам�
 	'swChank'=>array('unknown'=>1),
 	'walk_timeout'=>10000000,
 	'walk_retries'=>1,
-	'gat_timeout'=>3000000,
+	'get_timeout'=>3000000,
 	'get_retries'=>1,
 	'oids' => array(
 		'ObjectID'=>array( // sysObjectID.0 (.1.3.6.1.2.1.1.2.0)
@@ -141,14 +141,15 @@ class switch_snmp {
 		global $DEBUG, $config, $snmp_conf;
 		snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
 		$cfg = $this->cfg = $snmp_conf;
-		if(isset($cfg['walk_timeout'])) $this->walk_timeout = $cfg['walk_timeout']; else $this->walk_timeout = 3000000;
-		if(isset($cfg['walk_retries'])) $this->walk_retries = $cfg['walk_retries']; else $this->walk_retries = 2;
-		if(isset($cfg['get_timeout'])) $this->gat_timeout = $cfg['get_timeout']; else $this->get_timeout = 1000000;
-		if(isset($cfg['get_retries'])) $this->get_retries = $cfg['get_retries']; else $this->get_retries = 3;
-		if(isset($cfg['cachetimeout'])) $this->timeout = $cfg['cachetimeout']; else $this->timeout = 300;
-		if(isset($cfg['cachedir'])) $this->cachedir = $cfg['cachedir']; else $this->cachedir = '/tmp/';
+		$this->walk_timeout = isset($cfg['walk_timeout'])? $cfg['walk_timeout'] : 3000000;
+		$this->walk_retries = isset($cfg['walk_retries'])? $cfg['walk_retries'] : 2;
+		$this->get_timeout = isset($cfg['get_timeout'])? $cfg['get_timeout'] : 1000000;
+		$this->get_retries = isset($cfg['get_retries'])? $cfg['get_retries'] : 3;
+		$this->timeout = isset($cfg['cachetimeout'])? $cfg['cachetimeout'] : 300;
+		$this->cachedir = isset($cfg['cachedir'])? $cfg['cachedir'] : '/tmp/';
 		$this->ip = isset($obj['ip'])? preg_replace('/[^0-9A-Za-z\.\-]/','',$obj['ip']) : '127.0.0.1';
-		$this->community = isset($obj['community'])? preg_replace('/[^0-9A-Za-z\-]/','',$obj['community']) : 'public';
+		$this->community = isset($obj['community'])? preg_replace('/[^0-9a-z\-]/i','',$obj['community']) : 'public';
+		if($this->community != $obj['community']) log_txt("switch_snmp: Внимание community '{$this->community}' != '{$obj['community']}'");
 		$this->numports = $obj['numports'];
 		$this->oids = $this->cfg['oids']['ALL'];
 		$this->version = (isset($this->cfg['version']))? $this->cfg['version'] : SNMP::VERSION_2c;
@@ -181,6 +182,7 @@ class switch_snmp {
 		global $cache, $DEBUG;
 		if(isset($cache['snmp'][$this->ip]['model'])){
 			if(!$this->sysname) $this->sysname = $cache['snmp'][$this->ip]['sysname'];
+			if($DEBUG>2) log_txt(__METHOD__.": from cache: {$cache['snmp'][$this->ip]['model']}");
 			return $cache['snmp'][$this->ip]['model'];
 		}
 		if(!($sysname = $this->get('sysname',false))) $this->online = false;
@@ -336,7 +338,6 @@ class switch_snmp {
 		}else{
 			$this->log(__METHOD__.": error input param: ".arrstr($r));
 		}
-		if($DEBUG>2) log_txt(__METHOD__." {$this->ip}  {$r['oid'][0]}");
 		$short = (@$r['oid'][0] == 'sysname')? true : false;
 		if(isset($r['oid'])) foreach($r['oid'] as $k=>$v) {
 				$oid = $v;
@@ -346,9 +347,11 @@ class switch_snmp {
 				$r['OID'][$k] = $oid;
 				if($oid != $v) $o[$oid] = $v;
 		}
+		if($DEBUG>2) log_txt(__METHOD__." {$this->ip}  {$r['oid'][0]}");
 		if(!isset($r['OID'])) { $this->log(__METHOD__.": Не найден OID для {$this->ip}"); return false; }
 		if($short) $session = new SNMP($this->version, $this->ip, $this->community, $this->get_timeout, $this->get_retries);
 		else $session = new SNMP($this->version, $this->ip, $this->community);
+		if($DEBUG>2) log_txt(__METHOD__." {$this->ip} session short:".arrstr($short)." v:{$this->version} community:'{$this->community}'");
 		$session->oid_output_format = SNMP_OID_OUTPUT_NUMERIC;
 		$chanks=0; $l = count($r['OID']); $i=0; $tree = array();
 		foreach($r['OID'] as $n=>$oid) {
@@ -357,7 +360,8 @@ class switch_snmp {
 			$i++;
 		}
 		foreach($chank as $i=>$ch) 
-			if($t = @$session->get($ch)) {
+			if($DEBUG>2) log_txt(__METHOD__." {$this->ip} chank[$i] ".arrstr($ch));
+			if($t = $session->get($ch)) {
 				$tree = array_merge($tree,$t);
 			} else {
 				$tree = false;
@@ -554,8 +558,10 @@ class switch_snmp {
 		global $DEBUG;
 		if($DEBUG>2) log_txt(__METHOD__." {$this->ip} $mac");
 		$res = $this->onufdb($r);
-		if(!isset($res[$mac])) return false;
-		return $res[$mac];
+		if(isset($res[$mac])) return $res[$mac];
+		elseif(isset($res[strtoupper($mac)])) return $res[strtoupper($mac)];
+		elseif(isset($res[strtolower($mac)])) return $res[strtolower($mac)];
+		return false;
 	}
 	
 	private function oid2mac($str){

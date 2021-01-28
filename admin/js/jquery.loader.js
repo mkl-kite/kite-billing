@@ -1990,6 +1990,7 @@ M.storage.addWatch('mapSearch',{
 		if(objects){
 			var o = objects.getObjectByID(val);
 			if(o){
+				if(!map.hasLayer(o)) map.addLayer(o);
 				if(objects.isSelected(o)) objects.deSelect(o);
 				objects.Select(o);
 			}

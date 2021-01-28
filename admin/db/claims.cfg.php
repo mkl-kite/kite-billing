@@ -610,11 +610,7 @@ function check_type($s) {
 }
 
 function check_fio($s) {
-	global $errors;
-	if(preg_match('/[A-Za-z]/',$s)) $errors[] = 'ФИО: Присутствуют английские буквы!';
-	elseif(preg_match('/[^А-ЯЁа-яё ]/u',$s)) $errors[] = 'ФИО: Присутствуют посторонние символы!';
-	elseif((count(preg_split('/\s+/',$s)))!=3) $errors[] = 'Требуется полные Имя Фамилия Отчество!';
-	if(count($errors)==0) return true; else return false;
+	if(normalize_fio($s)) return true; else return false;
 }
 
 function check_claim_for_save($r) {

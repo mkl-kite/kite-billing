@@ -715,15 +715,19 @@ $(document).ready(function() {
 	})
 
 	
-	if(M && M.conf) mconf = M.conf.get('map');
+	var mconf = (M && typeof M.conf === 'object')? mconf = M.conf.get('map') : {};
 	if(typeof mconf === 'undefined') { M.conf.save('map',{}); mconf = M.conf.get('map') }
 
 	var wmap = Math.floor($('#all').width() * 0.7 - 2);
-	if(typeof mconf.trg === 'undefined') {
+	if(typeof mconf.trg === 'undefined' || typeof mconf.view === 'undefined') {
 		mconf.trg = {width: $('#all').width() - wmap}
 		M.conf.save('map',mconf)
 	}else{
 		if(mconf.trg.width <= 700) wmap = $('#all').width() - mconf.trg.width -2
+	}
+	if(typeof mconf.view === 'undefined') {
+		mconf.view = wmap+'x'+($(window).height() - Math.floor($('#map').offset()['top']) - 10);
+		M.conf.save('map',mconf)
 	}
 	var deltaW = Math.floor($(window).width() - $('#all').width()), wwStart = false;
 	$('#map').outerWidth(wmap);
@@ -751,8 +755,10 @@ $(document).ready(function() {
 	$(window).resize(function(e) {
 		if(wwStart) return this;
 		var head = $('#map').offset()['top'], top = $(window).height() - head - 10,
-			ww = $(window).width(), mw = $('#map').outerWidth(), tw = $('#targets').outerWidth();
+			ww = $(window).width(), mw = $('#map').outerWidth(), tw = $('#targets').outerWidth(),
+			mh = $(window).height() - Math.floor($('#map').offset()['top']) - 10;
 		console.log("resize:   win: "+ww+"   map: "+mw+"  tw: "+tw);
+		mconf.view = Math.floor(mw-2)+'x'+Math.floor(mh);
 		$('#map').outerHeight(top);
 		$('#targets').outerHeight(top);
 		$('#map').resizable('option',{ maxWidth: Math.floor(ww * 0.8) });
@@ -760,11 +766,18 @@ $(document).ready(function() {
 	})
 	$(window).trigger('resize');
 
-	var ldr = $.loader(), target, mconf;
-	if('place' in mconf)
-		target = new L.LatLng(mconf.place.lat,mconf.place.lng)
-	else
-		target = new L.LatLng(48.0178386687,38.7565791607)
+	var ldr = $.loader(), firstcenter, firstzoom;
+	if('place' in mconf){
+		firstcenter = new L.LatLng(mconf.place.lat,mconf.place.lng);
+		firstzoom = mconf.place.zoom;
+	}else if(default_position){
+		var pos = default_position.split(/,/);
+		firstcenter = new L.LatLng(pos[0],pos[1]);
+		firstzoom = pos[2];
+	}else{
+		firstcenter = new L.LatLng(55.751939,37.617156);
+		firstzoom = 16;
+	}
 /*
 	var toggleCRS = function(e){
 		var xy = map.getCenter(), z = map.getZoom();
@@ -790,8 +803,6 @@ $(document).ready(function() {
 		updateWhenIdle: false,
 		attribution: '<a href="'+(company_url||'#menu')+'" target="_blank">'+autonom_name+'</a>'
 	});
-//	terra.on('add',function(){ toggleCRS(true); })
-//	terra.on('remove',function(){ toggleCRS(false); })
 	yndx = new L.TileLayer('https://vec{s}.maps.yandex.net/tiles?l=map&v=18.03.01-4&z={z}&x={x}&y={y}&scale=1&lang=ru_RU',{
 		crs: 'EPSG3395',
 		subdomains: ['01', '02', '03', '04'],
@@ -799,10 +810,8 @@ $(document).ready(function() {
 		reuseTiles: true,
 		updateWhenIdle: false
 	});
-//	yndx.on('add',function(){ toggleCRS(true); })
-//	yndx.on('remove',function(){ toggleCRS(false); })
-	// googleLayer = new L.Google('ROADMAP')
-	map = new L.Map('map', {center: target, zoom: 16, zoomAnimation: false })
+	map = new L.Map('map', {center: firstcenter, zoom: firstzoom, zoomAnimation: false });
+
 	var baseLayers = {'Yandex':yndx, 'Google':google, 'OSM':osm},
 	overlays = {
 		"Объекты":Homes,
@@ -1129,7 +1138,6 @@ $(document).ready(function() {
 
 	// подключение тайлового слоя и оверлеев
 	if(M && typeof M.conf === 'object') {
-		if(typeof mconf !== 'object') mconf = {};
 		if(!(mconf.baseLayer && baseLayers[mconf.baseLayer])){
 			if(autonom_name) mconf.baseLayer = autonom_name;
 			else mconf.baseLayer = 'Yandex';
@@ -1436,7 +1444,6 @@ $(document).ready(function() {
 	ldr.get({ //	Получает данные по гео объектам и отображает их на карте
 		data: "go=homes&do=get",
 		onLoaded:function(d) {
-			var mconf, i;
 			if(d.nagiosURL) nagiosURL = d.nagiosURL;
 			if(d.onuSignalURL) onuSignalURL = d.onuSignalURL;
 			if(d.devtypes) devtypes = d.devtypes;
@@ -1448,15 +1455,8 @@ $(document).ready(function() {
 						rayonView(obj.latitude,obj.longitude,obj.zoom)
 				},{listName:'rayon'})
 				map.addControl(rayons);
-				if(M && typeof M.conf === 'object') mconf = M.conf.get('map'); else mconf={}
-				if(typeof mconf.place === 'object') {
-					rayonView(mconf.place.lat,mconf.place.lng,mconf.place.zoom)
-				}else if(default_position){
-					var pos = default_position.split(/,/);
-					rayonView(pos[0],pos[1],pos[2]);
-				}else{
-					if(d.rayons[0] && typeof d.rayons[0] == 'object')
-						rayonView(d.rayons[0].latitude,d.rayons[0].longitude,d.rayons[0].zoom)
+				if(!('place' in mconf) && !default_position && d.rayons[0] && typeof d.rayons[0] == 'object') {
+					rayonView(d.rayons[0].latitude,d.rayons[0].longitude,d.rayons[0].zoom)
 				}
 			}
 			if(d.cablecolors){
@@ -1915,7 +1915,6 @@ $(document).ready(function() {
 	})
 
 	map.on('overlayremove', function(e){
-		var mconf;
 		if(e.name in overlays) {
 			arrangeLayers()
 			mconf = M.conf.get('map');

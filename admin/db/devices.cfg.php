@@ -511,12 +511,14 @@ function onsave_device($id,$save,$my) {
 
 	$device = $q->select("SELECT * FROM devices WHERE id='{$save['id']}'",1);
 
-	if(ICINGA_URL && $device['type']=='switch' && count($changes = array_intersect_key($save,$fldmon))>0){
+	if($device['type']=='switch' && count($changes = array_intersect_key($save,$fldmon))>0){
 		if(isset($changes['node1'])) $device['address'] = $q->select("SELECT address FROM map WHERE id='{$changes['node1']}'",4);
 		$mon = new Icinga2();
-		if(!$mon->updateHost($device)){
-			if($mon->code == 404 && !$mon->createHost($device))
-				log_txt("Icinga2 ошибка изменения хоста: ".$mon->error);
+		if(ICINGA_URL){
+			if(!$mon->updateHost($device)){
+				if($mon->code == 404 && !$mon->createHost($device))
+					log_txt("Icinga2 ошибка изменения хоста: ".$mon->error);
+			}
 		}
 		updateDbPorts($device);
 	}
