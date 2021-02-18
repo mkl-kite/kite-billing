@@ -1,13 +1,10 @@
-/* Убираем границу */
-A IMG { border: none; }
-
-html { height:100% }
-/* Цвет фона страницы */
+html { height:100%; }
 BODY {	
 	background-color: #ddddff; 
 	height:100%;
 	margin:0;
 }
+IMG { border: none; }
 
 /* Заголовки */
 H1 {font-size:32pt;margin:0;font-family:sans-serif;font-weight:bold;text-align:center;}
@@ -118,8 +115,8 @@ ul.ui-autocomplete {
 	margin: 10px;
 	-webkit-box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.65);
 	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.65);
-/*	display:inline; */
 }
+.chartlist p { min-height:200px; }
 
 /* Для показа заставки при превышении времени загрузки */
 .overlay {
@@ -132,6 +129,7 @@ ul.ui-autocomplete {
 	background-color: rgba(0, 0, 0, 0.3);
 	display:none;
 	z-index:1000;
+	overflow-y:auto;
 }
 .contx {
 	position:fixed;
@@ -145,9 +143,8 @@ ul.ui-autocomplete {
 	background-color: rgba(0, 0, 0, 0);
 }
 .overlay > div {
-	height:100%;
+	height:99.5%;
 	display:inline-table;
-	overflow:auto;
 }
 .overlay > div > div {
 	display:table-cell;
@@ -903,7 +900,6 @@ FORM.normal #field-money input { padding:3px 4px; }
 FORM.normal #field-activate { float:right; margin-right:10px; }
 FORM.normal[name=map] #field-type { float:left; }
 FORM.normal[name=map] #field-type + #field-subtype .label { min-width:55px; }
-FORM.normal[name=map] #field-rayon { clear:both; }
 FORM.normal[name=map] { max-width:380px; }
 FORM.normal[name=pay] .label { min-width:100px; }
 FORM.normal[name=pay] .header { margin-bottom:20px; }
@@ -1612,7 +1608,6 @@ FORM .submit-container {
 	bottom:0;
 	margin:20px 0 8px 0;
 	text-align:right;
-	position:relative;
 }
 FORM.error .submit-button {
 	border: 1px solid #731515;
@@ -1683,7 +1678,7 @@ FORM.normal .submit-button, FORM.normal INPUT[type=button], FORM.normal INPUT[ty
 	vertical-align: middle;
 	cursor:pointer;
 	margin-left: 10px;
-	min-height:20px;
+	min-height:25px;
 	outline: none;
 	-webkit-user-select: none;
 	-moz-user-select: none;

@@ -2480,7 +2480,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `CreatePorts`(
     node1 int(10),
     node2 int(10),
     bandleports int(10),
-    colorscheme varchar(32)
+    colorscheme varchar(32) CHARSET utf8
 )
     SQL SECURITY INVOKER
 BEGIN
