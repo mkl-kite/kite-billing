@@ -359,7 +359,7 @@ class switch_snmp {
 			$chank[$chanks][$i] = $r['OID'][($chanks*$this->qmax)+$i];
 			$i++;
 		}
-		foreach($chank as $i=>$ch) 
+		foreach($chank as $i=>$ch) {
 			if($DEBUG>2) log_txt(__METHOD__." {$this->ip} chank[$i] ".arrstr($ch));
 			if($t = $session->get($ch)) {
 				$tree = array_merge($tree,$t);
@@ -367,6 +367,7 @@ class switch_snmp {
 				$tree = false;
 				break;
 			}
+		}
 		if(!$tree) {
 			if($show_err && ($err = $session->getError()))
 				$this->log(__METHOD__.": Ошибка SNMP! oid:".(isset($r['oid'])?$r['oid'][0]:$r['OID'][0])." vers:{$this->version} ip:{$this->ip} comm:{$this->community} $err");

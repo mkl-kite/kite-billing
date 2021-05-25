@@ -775,6 +775,8 @@ function cut_cable($id,$Point,$node=array()){ // разрезает кабель
 	$c1_xy[$i] = $Point;
 	$c1_xy = makePoints(0,$cable['object'],$c1_xy);
 	$c1_length = lineLength($c1_xy);
+	// берем цвет жилы, метки и цвет связки у первого кабеля для второго
+	$ports = $q->select("SELECT p1.* FROM devports p1, devports p2 WHERE p1.device=p2.device AND p1.number=p2.number AND p1.id>p2.id AND p1.device={$cable['id']}",2,'id');
 	// создаём объект кабеля 2
 	$map_c2 = array('type'=>'cable','name'=>'cable_'.$cable['id']."_2",'gtype'=>'LineString','length'=>$c0_length-$c1_length);
 	$map_c2['id'] = $q->insert('map',$map_c2);
@@ -783,18 +785,19 @@ function cut_cable($id,$Point,$node=array()){ // разрезает кабель
 	$new_n = $q->select("SELECT max(replace(name,'{$c_name}_',''))+1 as n FROM devices WHERE type='cable' AND name rlike '{$c_name}_[0-9]*'",4);
 	$new_name = ($new_n)? $c_name."_".$new_n : $cable['name']."_1";
 	$cable2 = $q->get('devices',$map_c2['id'],'object');
-	$cable2 =array_merge($cable2,array('subtype'=>$cable['subtype'], 'name'=>$new_name, 'colorscheme'=>$cable['colorscheme'], 'node1'=>$node['id'], 'node2'=>$cable['node2'], 'numports'=>$cable['numports'], 'bandleports'=>$cable['bandleports']));
+	$cable2 = array_merge($cable2,array('subtype'=>$cable['subtype'], 'name'=>$new_name, 'colorscheme'=>$cable['colorscheme'], 'node1'=>$node['id'], 'node2'=>$cable['node2'], 'numports'=>$cable['numports'], 'bandleports'=>$cable['bandleports']));
 	$q->update_record('devices',$cable2);
 	// меняем узел на конечных портах кабеля 1
 	$q->update_record('devices',array('id'=>$cable['id'],'node2'=>$node['id']));
 
-	// берем цвет жилы, метки и цвет связки у первого кабеля для второго
-	$ports = $q->select("SELECT p1.* FROM devports p1, devports p2 WHERE p1.device=p2.device AND p1.number=p2.number AND p1.id<p2.id AND p1.device={$cable['id']}",2,'id');
-	foreach($ports as $k=>$p) $q->query("UPDATE devports SET color='{$p['color']}', coloropt='{$p['coloropt']}', bandle='{$p['bandle']}'  WHERE device='{$cable2['id']}' AND number='{$p['number']}'");
-
+	// копируем цвета и соединения на создаваемый кабель
+	foreach($ports as $k=>$p){
+		$q->query("UPDATE devports SET color='{$p['color']}', coloropt='{$p['coloropt']}', bandle='{$p['bandle']}'  WHERE device='{$cable2['id']}' AND number='{$p['number']}'");
+		if($p['link']) $q->query("UPDATE devports p1, devports p2 SET p1.link=p2.id, p2.link=p1.id WHERE p1.device='{$cable2['id']}' AND p1.node='{$cable2['node2']}' AND p1.number='{$p['number']}' AND p1.node=p2.node AND p2.id='{$p['link']}'");
+	}
 	// соединяем порты в точке разреза
 	$q->query("UPDATE devports p1, devports p2 SET p1.link=p2.id, p2.link=p1.id WHERE p1.number=p2.number AND p1.device={$cable['id']} AND p2.device={$cable2['id']} AND p1.node=p2.node AND p1.node={$node['id']}");
-	// изменяем длину и конечный узел начального кабеля
+	// изменяем длину
 	$q->update_record('map',array('id'=>$cable['object'],'length'=>$c1_length));
 	// разделяем координаты на 2 кабеля
 	$q->query("UPDATE `map_xy` SET `object`={$cable2['object']}, `num`=`num`-$seg+1 WHERE `object`={$cable['object']} AND num >= $seg ");
