@@ -36,7 +36,7 @@ define("CONFIGURE_NAGIOS","0"); // использовать автоматиче
 define("ICINGA_DOMAIN","domain.net");
 define("ICINGA_URL","https://domain.net:5665");
 define("ICINGA_LOGIN","root");
-define("ICINGA_PASSWORD","632ab5a746454861");
+define("ICINGA_PASSWORD","");
 
 define("ONU_SIGNAL_URL",NAGIOS_URL."?do=client_graph&host=1&period=week&mac=");
 
@@ -377,14 +377,14 @@ $config = array(
 	),
 	'db' => array(
 		'username' => 'sqladm',
-		'password'=>'IL2CTkuLSDFpQ',
+		'password'=>'',
 		'server'=>'localhost',
 		'db'=>'radius', 
 		'charset'=>'utf8' 
 	),
 	'db_cards' => array(
 		'username' => 'cards',
-		'password'=>'fc1SIx72wlyjv',
+		'password'=>'',
 		'server'=>'localhost',
 		'db'=>'cards', 
 		'charset'=>'utf8' 
@@ -471,11 +471,11 @@ $config = array(
 			),
 			'mirage'=>array(
 				'counter' => '392',
-				'sender' => 'net-Line',
+				'sender' => '',
 				'server' => '192.168.0.1',
 				'port' => '5038',
-				'login' => 'snsender',
-				'password' => 'ae464ewhr3yd',
+				'login' => '',
+				'password' => '',
 				'dongle' => array(
 					'MTS5' => 1000,
 					'MTS6' => 294,
@@ -486,28 +486,28 @@ $config = array(
 			'turbosms'=>array(
 				'sender' => 'net-Line',
 				'server' => 'http://turbosms.in.ua/api/wsdl.html',
-				'login' => 'met_line',
-				'password' => 'asdqwe1234'
+				'login' => '',
+				'password' => ''
 			),
 			'bsgroup'=>array(
-				'login' => 'netline_sn',
-				'password' => 'netasdsn',
+				'login' => '',
+				'password' => '',
 				'server' => '192.168.0.1',
-				'sender' => 'Net-Line',
+				'sender' => '',
 				'port' => '2775'
 			),
 			'smstosrv'=>array(
 				'server' => 'http://192.168.0.1/en/dosend.php',
-				'USERNAME' => 'snsender',
-				'PASSWORD' => 'zxcasdqwe1234',
+				'USERNAME' => '',
+				'PASSWORD' => '',
 				'smsprovider' => 1,
 				'method' => 2
 			),
 			'star'=>array(
 				'server' => 'http://192.168.1.150/default/en_US/send.html',
 				'attempt' => 100,
-				'login' => 'admin',
-				'password' => 'admin',
+				'login' => '',
+				'password' => '',
 				'linelimit' => array(
 					'3' => 148,
 					'4' => 148
