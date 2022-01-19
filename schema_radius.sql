@@ -2269,6 +2269,27 @@ CREATE TABLE `workpeople` (
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 --
+-- Table structure for table `providers`
+--
+
+DROP TABLE IF EXISTS `providers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `providers` (
+  `id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL DEFAULT '',
+  `type` varchar(64) NOT NULL DEFAULT 'ProviderXML',
+  `ip` varchar(64) NOT NULL DEFAULT '',
+  `protocol` varchar(16) NOT NULL DEFAULT '',
+  `counter` int(10) unsigned NOT NULL DEFAULT '0',
+  `ticket` varchar(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `ip` (`ip`)
+) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+--
 -- Dumping routines for database 'radius'
 --
 /*!50003 DROP FUNCTION IF EXISTS `distance` */;

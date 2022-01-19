@@ -1,17 +1,5 @@
 <?php
 $config['api'] = array(
-	'providers'=>array(
-		'176.121.192.112'=>array('name'=>'Shakhtersk','type'=>'ProviderJSON'),
-		'192.168.14.1'=>array('name'=>'Armax','type'=>'ProviderXML'),
-		'212.87.166.123'=>array('name'=>'kite','type'=>'ProviderXML'),
-		'X.X.X.X'=>array('name'=>'BANK','type'=>'ProviderXML'),
-		'195.211.23.206'=>array('name'=>'BANK_V1.0.3','type'=>'ProviderXXX'),
-		'176.121.197.130'=>array('name'=>'AsterHr','type'=>'ProviderJSON'),
-		'176.121.192.6'=>array('name'=>'nagios','type'=>'ProviderJSON'),
-	),
-	'restrict'=>array( // методы разрешенные конкретному провайдеру
-		'BANK'=>array('check','pay','get')
-	),
 	'options'=>array(
 		'AsterHr'=>array(
 			'input'=>array(
@@ -117,46 +105,6 @@ $config['api'] = array(
 				),
 			)
 		),
-		'Shakhtersk'=>array(
-			'result'=>array('NONE'=>0,'OK'=>1,'ERROR'=>2,'FATAL'=>2,'SUMM'=>2),
-			'input'=>array(
-				'sum'=>'money',
-				'date'=>'paytime',
-				'type'=>'from',
-			),
-			'redirect'=>array(
-				'pigin'=>'http://domain.net/api/index.php?command=pay&account=:CONTRACT:&sum=:MONEY:&txn_id=:PAYMENT_ID:&type=:FROM:',
-			),
-			'output'=>array(
-				'check'=>array(
-					'result'=>'result',
-					'uid'=>'uid'
-				),
-				'get'=>array(
-					'result'=>'result',
-					'data'=>array(
-						'deposit'=>'deposit',
-						'expired'=>'expired',
-						'phone'=>'phone',
-						'fio'=>'fio',
-						'tarif'=>'tarif',
-						'email'=>'email'
-					)
-				),
-				'pay'=>array(
-					'result'=>'result',
-					'note'=>'note',
-					'data'=>array(
-						'unique_id'=>'id',
-						'card'=>'payment_id',
-						'money'=>'sum',
-						'acttime'=>'private_date',
-						'paytime'=>'date',
-						'from'=>'type'
-					),
-				)
-			)
-		),
 		'BANK'=>array(
 			'result'=>array('NONE'=>2,'OK'=>0,'ERROR'=>1,'FATAL'=>2,'SUMM'=>1),
 			'reverce_result_on_pay_exists'=>1,
@@ -227,16 +175,6 @@ $config['api'] = array(
 				),
 				'default'=>array(
 					'result'=>'Status',
-				),
-			)
-		),
-		'nagios'=>array(
-			'input'=>array(
-				'type'=>'from',
-			),
-			'output'=>array(
-				'sms'=>array(
-					'result'=>'result',
 				),
 			)
 		),
